@@ -3,9 +3,12 @@
 ################################################################################
 
 *.vspscc
+*.vs
 /Tutorials/CSharp_PI/obj
 /Tutorials/CSharp_PI/packages
 /Tutorials/CSharp_PI/bin
 /Tutorials/CSharp_PI/.vs
 /Tutorials/NodeJS_PI/node_modules
 /Tutorials/NodeJS_PI/package-lock.json
+/.vs
+/Tutorials/CSharp_Sds/obj
