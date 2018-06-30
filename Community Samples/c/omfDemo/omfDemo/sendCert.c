@@ -110,10 +110,17 @@ static int sendCert(const char* szUrl,
 		curl_easy_setopt(g_curl, CURLOPT_SSL_VERIFYHOST, 0);
 #endif
 
+#if 0
 		/* so, to enable verification of the Relay computer */
 		curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 1);
 		curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 2);
+		/** use local directory cert and not host certificate store
 		curl_easy_setopt(curl, CURLOPT_CAINFO, GetRelayCertFile());
+		**/
+
+#endif
+
+
 
 		headers = curl_slist_append(headers, generateHeaderItem("Accept", "application/json"));
 		headers = curl_slist_append(headers, generateHeaderItem("Content-Type", "application/json"));
