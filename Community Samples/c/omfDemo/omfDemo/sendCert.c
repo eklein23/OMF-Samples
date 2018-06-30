@@ -239,10 +239,3 @@ static char* myComputerName()
 		
 	return szHostname;
 }
-
-void SendCertToRelay(char* szRelay, char* szPort, char* szConnectorName, char* szOneTimePassword)
-{
-	char szUrl[LEN_URL];	
-	snprintf(szUrl, LEN_URL, "https://%s:%s/%s", szRelay, szPort, RELAY_END_POINT);
-	sendConnCertToRelay( szUrl, CERTIFICATE_FILE, CONNECTOR_TYPE, myComputerName(), szConnectorName, szOneTimePassword);
-}

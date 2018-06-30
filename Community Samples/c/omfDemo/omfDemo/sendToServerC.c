@@ -189,7 +189,7 @@ int sendMsgToRelay(
 	headers = NULL;
 
 	if (CURLE_OK == res) {
-		if (200 == *http_response_code || 202 == *http_response_code) {
+		if (200 == *http_response_code || 202 == *http_response_code || 204 == *http_response_code) {
 			retval = 0;
 		}
 		else if (503 == *http_response_code) {

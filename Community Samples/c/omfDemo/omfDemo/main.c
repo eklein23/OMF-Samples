@@ -48,8 +48,11 @@ SUPPORT UNDER EITHER OSISOFT'S STANDARD OR ENTERPRISE LEVEL SUPPORT AGREEMENTS
    1.2.0.0	 30-Nov-2016	KShu			OMF v0.11rc1 first commit
    1.3.0.0   20-Jun-2018    mlagro          OMF 1.0
    1.4.0.0   21-Apr-2018    mof             OMF 1.0/Relay 2.2.16.1212
+   1.4.0.1   28-Jun-2018	mof             Remove local copy of cert. requirement and update usage	
 */
-#define g_VERSION  "1.4.0.0  21-Apr-2018"
+#define g_VERSION  "1.4.0.1  28-Jun-2018"
+
+#define TOKEN "uid=8e9811b5-02e2-49dc-8532-9fa91e7a89c6&crt=20180628223548712&sig=pUzh+qToZSDXwSS3EaZ9e12j5fAjoS+crwutCKAXZpA="
 
 #define RELAY_PAGE  "/ingress/messages"
 #define HDR_VERSION  "1.0"
@@ -69,30 +72,6 @@ extern struct Transmission g_theTransmissions[];
 extern char g_validVehStatus[NUM_VALID_VEHSTATUS][STRING_LENGTH_MED];
 extern double g_vehicleFloat[NUM_VEHICLE_FLOAT];
 extern int g_vehicleInt[NUM_VEHICLE_INT];
-
-/* declartion of functions implemented in other files */
-void SendCertToRelay(char* szRelay, char* szPort, char* szConnectorName, char* szOneTimePassword);
-char* GetFullPath();
-/* end declartion of functions implemented in other files */
-
-/*
-This function returns the fully qualified path to the certificate file that the Relay uses.
-"Relay uses" means the file that has the thumbprint as specified in certhash:
-   netsh http> netsh http add sslcert ipport=0.0.0.0:5460 
-      certhash=b68adab6332d57678cc2ef6b56f9affc4d9c412c 
-	  appid={ABCD272C-433A-492B-99A7-B307AECD0423}
-
-This certificate file must be in PEM format.
-
-The developer is responsible for putting this certificate file onto the connector computer.
-*/
-char* GetRelayCertFile()
-{
-	static char szFile[PATH_LENGTH];
-	snprintf(szFile, PATH_LENGTH, "%s%s", GetFullPath(), RELAY_CERT_FILE);
-
-	return szFile;
-}
 
 /*
 This function logs information. Right now, we simply write to the console. 
@@ -139,7 +118,7 @@ int handlePostReturn(int ret, int http_response_code, const char* szMsg)
 		logMsg(szMsgLog);
 	}
 	else {
-		if (202 == http_response_code || 200 == http_response_code) {
+		if (204 == http_response_code || 202 == http_response_code || 200 == http_response_code) {
 			snprintf(szMsgLog, STRING_LENGTH_LARGE, "%s--good http response! (%d)", szMsg, http_response_code);
 			logMsg(szMsgLog);
 		}
@@ -154,21 +133,18 @@ int handlePostReturn(int ret, int http_response_code, const char* szMsg)
 
 void usage()
 {
-	printf("Usage: program.exe RelayComputer PortNum [tests]|[ConnectorName OneTimePassword]\n");
+	printf("Note: Obtain the security token from the OMF endpoint, update the TOKEN define statement and compile.");
+	printf("Usage: program.exe RelayComputer PortNum [tests]\n");
 #ifdef _WIN32
 	printf("For example:\n");
 	printf("C:> program.exe RelayComputer 8118\n"); 
 	printf("or\n");
 	printf("C:> program.exe RelayComputer 8118 tests\n");
-	printf("or\n");
-	printf("C:> program.exe RelayComputer 8118 MyOmfConnector 123456\n");
 #elif linux
 	printf("For example:\n");
-	printf("$ ./program.exe RelayComputer 8118\n");
+	printf("$ ./program RelayComputer 8118\n");
 	printf("or\n");
-	printf("$ ./program.exe RelayComputer 8118 tests\n");
-	printf("or\n");
-	printf("$ ./program.exe RelayComputer 8118 MyOmfConnector 123456\n");
+	printf("$ ./program RelayComputer 8118 tests\n");
 #else
 	need to implement
 #endif
@@ -348,20 +324,13 @@ int main(int argc, char** argv)
 
 	int testingOnly = 0;  /* test various functions */
 
-/* Updated for 201803beta */
-#ifdef _WIN32
-	char* szProducerToken = "uid=ad9fc9c4-856f-436a-8b88-69f8fce6a03a&sig=hNWA0/dQXtl3LK6fuVP/xz5NvkkH8CL+acbuAuw8raY=";
-#elif linux
-	char* szProducerToken = "uid=ad9fc9c4-856f-436a-8b88-69f8fce6a03a&sig=hNWA0/dQXtl3LK6fuVP/xz5NvkkH8CL+acbuAuw8raY=";
-#else
-	need to support
-#endif
+	char* szProducerToken = TOKEN;
 
 	char szMsg[STRING_LENGTH_LARGE];
 	snprintf(szMsg, STRING_LENGTH_LARGE, "Starting OMFDemo client application v%s", g_VERSION);
 	logMsg(szMsg);	
 	
-	if (argc != 3 && argc != 4 && argc != 5) {
+	if (argc != 3 && argc != 4) {
 		usage();
 		return -1;
 	}
@@ -370,11 +339,6 @@ int main(int argc, char** argv)
 	if (nPort < 1024) {
 		logMsg("port number must be at least 1024");
 		return -1;
-	}
-
-	if (5 == argc) {
-		SendCertToRelay(argv[1], argv[2], argv[3], argv[4]);
-		return 0;
 	}
 
 	/* argv[3] can be "tests" */
