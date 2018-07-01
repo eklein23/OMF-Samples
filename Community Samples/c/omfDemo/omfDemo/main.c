@@ -19,6 +19,8 @@ SUPPORT UNDER EITHER OSISOFT'S STANDARD OR ENTERPRISE LEVEL SUPPORT AGREEMENTS
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
+#include <ctype.h>
+
 
 #ifdef _WIN32
 #include <windows.h>
@@ -48,11 +50,20 @@ SUPPORT UNDER EITHER OSISOFT'S STANDARD OR ENTERPRISE LEVEL SUPPORT AGREEMENTS
    1.2.0.0	 30-Nov-2016	KShu			OMF v0.11rc1 first commit
    1.3.0.0   20-Jun-2018    mlagro          OMF 1.0
    1.4.0.0   21-Apr-2018    mof             OMF 1.0/Relay 2.2.16.1212
-   1.4.0.1   28-Jun-2018	mof             Remove local copy of cert. requirement and update usage	
+   1.4.0.1   28-Jun-2018    mof             Remove local copy of cert. requirement and update usage	
+   1.4.1.0   30-Jun-2018    mof             Add URN option to support non Relay endpoints
 */
-#define g_VERSION  "1.4.0.1  28-Jun-2018"
+#define g_VERSION  "1.4.1.0  30-Jun-2018"
 
+#if 0
+/* h */
 #define TOKEN "uid=8e9811b5-02e2-49dc-8532-9fa91e7a89c6&crt=20180628223548712&sig=pUzh+qToZSDXwSS3EaZ9e12j5fAjoS+crwutCKAXZpA="
+#elif 0
+/* emer */
+#define TOKEN "uid=2a3ffa9f-0be8-41d2-b05a-5c1f84ed531d&crt=20180701025123228&sig=pAHjoEweT0LO4JbIKEHhoEsA1xpw43H4qHl70oB9QyA="
+#elif 1
+#define TOKEN "1/a4c18898034b43ac8634b00c42a81b0a/2cafd94b87f14604a5ba4388e7cdf89c/a445ee81-2b91-4806-883b-1dc673d59147/63742449600/Zts9RdEXS0xtDqVtf3VcafnteT0atHDXa9uYLDmhIbI%3D"
+#endif
 
 #define RELAY_PAGE  "/ingress/messages"
 #define HDR_VERSION  "1.0"
@@ -71,8 +82,11 @@ extern struct Transmission g_theTransmissions[];
 
 extern char g_validVehStatus[NUM_VALID_VEHSTATUS][STRING_LENGTH_MED];
 extern double g_vehicleFloat[NUM_VEHICLE_FLOAT];
-extern int g_vehicleInt[NUM_VEHICLE_INT];
+int g_vehicleInt[NUM_VEHICLE_INT];
 
+int certCheck = 1; /* Verify certificate and hostname of the endpoint */
+char URN[STRING_LENGTH_MED];
+	
 /*
 This function logs information. Right now, we simply write to the console. 
 Of course, we can add code that writes to a file on disk or to the system log.
@@ -133,21 +147,17 @@ int handlePostReturn(int ret, int http_response_code, const char* szMsg)
 
 void usage()
 {
-	printf("Note: Obtain the security token from the OMF endpoint, update the TOKEN define statement and compile.");
-	printf("Usage: program.exe RelayComputer PortNum [tests]\n");
+	char *sProgram;
 #ifdef _WIN32
-	printf("For example:\n");
-	printf("C:> program.exe RelayComputer 8118\n"); 
-	printf("or\n");
-	printf("C:> program.exe RelayComputer 8118 tests\n");
+	sProgram = "program.exe";
 #elif linux
-	printf("For example:\n");
-	printf("$ ./program RelayComputer 8118\n");
-	printf("or\n");
-	printf("$ ./program RelayComputer 8118 tests\n");
-#else
-	need to implement
+	sProgram = "./program";
 #endif
+	printf("Usage: %s RelayComputer PortNum [URN] [tests|NoCertCheck]\n\n",sProgram);
+	printf("For example:\n");
+	printf("%s RelayComputer 8118\n",sProgram); 
+	printf("%s RelayComputer 8118 tests\n",sProgram);
+	printf("%s RelayComputer 8118 noCertCheck\n",sProgram);
 }
 
 /* Function to send Types, Streams, and non-time series Values 
@@ -324,27 +334,42 @@ int main(int argc, char** argv)
 
 	int testingOnly = 0;  /* test various functions */
 
+	int position = 4; /* argument position */
+
 	char* szProducerToken = TOKEN;
 
 	char szMsg[STRING_LENGTH_LARGE];
 	snprintf(szMsg, STRING_LENGTH_LARGE, "Starting OMFDemo client application v%s", g_VERSION);
 	logMsg(szMsg);	
-	
-	if (argc != 3 && argc != 4) {
+
+	snprintf(URN, STRING_LENGTH_MED, "%s", RELAY_PAGE); /* Default to a PI Connector Relay URN */
+		
+	if (argc < 3 || argc > 5) {
 		usage();
 		return -1;
 	}
 
 	nPort = atoi(argv[2]);
-	if (nPort < 1024) {
-		logMsg("port number must be at least 1024");
-		return -1;
+	
+	/* Check for supplied URN, default is for Relay server */
+	if (argc > 3) {
+		if (argv[3][0] == '/') {
+			snprintf(URN, STRING_LENGTH_MED, "%s", argv[3]);
+		}
+		if (argc > 4) position = 5;
 	}
 
-	/* argv[3] can be "tests" */
-	if (4 == argc) {
-		if (argv[3][0] == 't' || argv[3][0] == 'T') {
+	/* Check for tests or noCheckCert, position is incremented if URN was supplied as previous argument */
+	if (position == argc) {
+		if (argv[position-1][0] == 't' || argv[position-1][0] == 'T') {
 			testingOnly = 1;
+		}
+	}
+
+	/* argv[3] can be "noCertCheck" */
+	if (position == argc) {
+		if (argv[position-1][0] == 'n' || argv[position-1][0] == 'N') {
+			certCheck = 0;
 		}
 	}
 
@@ -374,7 +399,7 @@ int main(int argc, char** argv)
 	snprintf(hostInPost, STRING_LENGTH_MED, "%s:%s", argv[1], argv[2]);
 
 	/* set values for parameters that remain constant across messages */
-	setServerParams(hostInPost, RELAY_PAGE, szProducerToken, HDR_VERSION, MSGFORMAT_JSON);
+	setServerParams(hostInPost, URN, szProducerToken, HDR_VERSION, MSGFORMAT_JSON);
 
 	for (;;) {
 		if (0 == sendCoreValues()) {
