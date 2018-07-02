@@ -29,6 +29,8 @@ SUPPORT UNDER EITHER OSISOFT'S STANDARD OR ENTERPRISE LEVEL SUPPORT AGREEMENTS
 static CURL* g_curl;
 static char g_errbuf[CURL_ERROR_SIZE];
 
+extern int certCheck; /* Verify certificate and hostname of the endpoint */
+
 char* getCommLibErr()
 {
 	static char errbufNL[CURL_ERROR_SIZE + 1];
@@ -160,7 +162,8 @@ int sendMsgToRelay(
 	CURLOPT_CAINFO -- Pass a file holding a certificate to verify the peer with
 	*/
 
-	/* so, to enable verification of the Relay computer, comment out the if 0 here, and uncomment on line 169 */
+	/*** 
+	so, to enable verification of the Relay computer, comment out the if 0 here, and uncomment on line 169 
  #if 0 
 	curl_easy_setopt(g_curl, CURLOPT_SSL_VERIFYPEER, 1);
 	curl_easy_setopt(g_curl, CURLOPT_SSL_VERIFYHOST, 2);
@@ -168,10 +171,23 @@ int sendMsgToRelay(
  #endif 
 
 #if 1
-	/* so, to disable verification of the Relay computer, comment out the if 0 here, and uncomment on 163 */
+	 so, to disable verification of the Relay computer, comment out the if 0 here, and uncomment on 163 
 	curl_easy_setopt(g_curl, CURLOPT_SSL_VERIFYPEER, 0);
 	curl_easy_setopt(g_curl, CURLOPT_SSL_VERIFYHOST, 0);
 #endif
+
+	***/
+
+	if (certCheck) {
+		/* Verify certificate and host */
+		curl_easy_setopt(g_curl, CURLOPT_SSL_VERIFYPEER, 1);
+		curl_easy_setopt(g_curl, CURLOPT_SSL_VERIFYHOST, 2);
+	}
+	else {
+		/* Disable certificate check */
+		curl_easy_setopt(g_curl, CURLOPT_SSL_VERIFYPEER, 0);
+		curl_easy_setopt(g_curl, CURLOPT_SSL_VERIFYHOST, 0);
+	}
 
 	headers = curl_slist_append(headers, generateHeaderItem("producertoken", g_producerid));
 	headers = curl_slist_append(headers, generateHeaderItem("omfversion", g_version));
@@ -189,7 +205,7 @@ int sendMsgToRelay(
 	headers = NULL;
 
 	if (CURLE_OK == res) {
-		if (200 == *http_response_code || 202 == *http_response_code) {
+		if (200 == *http_response_code || 202 == *http_response_code || 204 == *http_response_code) {
 			retval = 0;
 		}
 		else if (503 == *http_response_code) {
