@@ -1,0 +1,40 @@
+[
+  {
+    "containerid": "Temperature1",
+    "values": [
+      {
+        "IndexedDateTime": "TIMESTAMP_NOW",
+        "vTemp": 300
+      }
+    ]
+  },
+ {
+    "containerid": "Temperature2",
+    "values": [
+      {
+        "IndexedDateTime": "TIMESTAMP_NOW",
+        "vTemp1": 400,
+		  "vTemp2": 500
+      }
+    ]
+  },
+   {
+    "containerid": "Temperature3",
+    "values": [
+      {
+        "IndexedDateTime": "TIMESTAMP_NOW",
+        "vTemp": 200
+      }
+    ]
+  },
+ {
+    "containerid": "Temperature4",
+    "values": [
+      {
+        "IndexedDateTime": "TIMESTAMP_NOW",
+        "vTemp1": 100,
+		  "vTemp2": 600
+      }
+    ]
+  }
+]

@@ -1,0 +1,73 @@
+[
+  {
+    "id": "TempSensorType",
+    "description": "Temperature Sensor",
+    "type": "object",
+    "classification": "static",
+    "properties": {
+      "TemperatureSensorName": {
+        "type": "string",
+        "isindex": true
+      },
+      "SerialNumber": {
+        "type": "string"
+      },
+      "UoM": {
+        "type": "string"
+      }
+    }
+  },
+    {
+    "id": "vTempType1",
+    "description": "Timestamp and real-time value(s)",
+    "type": "object",
+    "classification": "dynamic",
+    "properties": {
+      "IndexedDateTime": {
+        "type": "string",
+        "format": "date-time",
+        "isindex": true
+      },
+      "vTemp": {
+        "type": "number"
+      }
+    }
+  },
+  {
+    "id": "vTempType2",
+    "description": "Timestamp and real-time value(s)",
+    "type": "object",
+    "classification": "dynamic",
+    "properties": {
+      "IndexedDateTime": {
+        "type": "string",
+        "format": "date-time",
+        "isindex": true
+      },
+      "vTemp1": {
+        "type": "number"
+      },
+	  "vTemp2": {
+        "type": "number"
+      }
+    }
+  },
+  {
+  	"id": "AssetType",
+	 "description": "Location",
+	  "type":"object",
+	  "classification":"static",
+	  "properties":{
+		  "AssetName": {
+		  	"type": "string",
+			  "isindex": true
+		  },
+		  "Location":  {
+			  "type": "string"
+		  },
+		  "Owner":  {
+			  "type": "string"
+		  }
+	  }
+  }
+]
