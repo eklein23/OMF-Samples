@@ -1,0 +1,105 @@
+[
+  {
+    "typeid": "__Link",
+    "values": [
+      {
+        "source": {
+          "typeid": "AssetType",
+          "index": "_ROOT"
+        },
+        "target": {
+          "typeid": "AssetType",
+          "index": "Asset1"
+        }
+      },
+      {
+        "source": {
+          "typeid": "AssetType",
+          "index": "_ROOT"
+        },
+        "target": {
+          "typeid": "AssetType",
+          "index": "Asset2"
+        }
+      }
+    ]
+  },
+  {
+    "typeid": "__Link",
+    "values": [
+      {
+        "source": {
+          "typeid": "AssetType",
+          "index": "Asset1"
+        },
+        "target": {
+          "typeid": "TempSensorType",
+          "index": "Sensor1"
+        }
+      },
+      {
+        "source": {
+          "typeid": "AssetType",
+          "index": "Asset2"
+        },
+        "target": {
+          "typeid": "TempSensorType",
+          "index": "Sensor2"
+        }
+      },
+      {
+        "source": {
+          "typeid": "AssetType",
+          "index": "Asset2"
+        },
+        "target": {
+          "typeid": "TempSensorType",
+          "index": "Sensor3"
+        }
+      }
+
+    ]
+  },
+  {
+    "typeid": "__Link",
+    "values": [
+      {
+        "source": {
+          "typeid": "TempSensorType",
+          "index": "Sensor1"
+        },
+        "target": {
+          "containerid": "Temperature1"
+        }
+      },
+      {
+        "source": {
+          "typeid": "TempSensorType",
+          "index": "Sensor1"
+        },
+        "target": {
+          "containerid": "Temperature2"
+        }
+      },
+      {
+        "source": {
+          "typeid": "TempSensorType",
+          "index": "Sensor2"
+        },
+        "target": {
+          "containerid": "Temperature3"
+        }
+      },
+      {
+        "source": {
+          "typeid": "TempSensorType",
+          "index": "Sensor3"
+        },
+        "target": {
+          "containerid": "Temperature4"
+        }
+      }
+
+    ]
+  }
+]

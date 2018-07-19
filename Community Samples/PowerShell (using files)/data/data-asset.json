@@ -1,0 +1,35 @@
+[
+	{"typeid": "AssetType",
+		"values": [
+			{
+				"AssetName": "Asset1",
+				"Owner": "Penelope Pitstop",
+				"Location": "AreaC"
+			},
+			{
+				"AssetName": "Asset2",
+				"Owner": "Peter Perfect",
+				"Location": "AreaF"
+			}
+		]
+	},
+	{ "typeid": "TempSensorType",
+		"values": [
+			{
+			  "TemperatureSensorName":  "Sensor1",
+               "SerialNumber": "0x328332",
+				"Uom": "F"
+			},
+			{
+			  "TemperatureSensorName":  "Sensor2",
+               "SerialNumber": "0x328334",
+				"Uom": "F"
+			},
+			{
+			  "TemperatureSensorName":  "Sensor3",
+               "SerialNumber": "0x328333",
+				"Uom": "F"
+			}
+		]
+	}
+]

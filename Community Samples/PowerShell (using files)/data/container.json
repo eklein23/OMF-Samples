@@ -1,0 +1,18 @@
+[
+  {
+    "id": "Temperature1",
+    "typeid": "vTempType1"
+  },
+  {
+    "id": "Temperature2",
+    "typeid": "vTempType2"
+  },
+  {
+    "id": "Temperature3",
+    "typeid": "vTempType1"
+  },
+  {
+    "id": "Temperature4",
+    "typeid": "vTempType2"
+  }
+]
