@@ -68,12 +68,16 @@ $TARGET_URL = "https://lopezpiserver:777/ingress/messages";
 # !!! Note: if sending data to OSIsoft cloud services,
 # uncomment the below line in order to set the target URL to the OCS OMF endpoint:
 #$TARGET_URL = "https://dat-a.osisoft.com/api/omf"
+# !!! Note: if writing to an Edge Data Store, you can use the default tenant and namespace, so the URL would be
+#$TARGET_URL = "https://localhost:5000/edge/omf/tenants/default/namespaces/data"
 
 # Specify the producer token, a unique token used to identify and authorize a given OMF producer. Consult the OSIsoft Cloud Services or PI Connector Relay documentation for further information.
 $PRODUCER_TOKEN = "OMFv1";
 # !!! Note: if sending data to OSIsoft cloud services, the producer token should be the
 # security token obtained for a particular Tenant and Publisher; see
 # http:#qi-docs.readthedocs.io/en/latest/OMF_Ingress_Specification.html#headers
+# !!! Note: if writing to an Edge Data Store, that producer token can be found here:
+# https://osisoft-edge.readthedocs.io/en/latest/EdgeSecurity.html
 
 # ************************************************************************
 # Specify options for sending web requests to the target

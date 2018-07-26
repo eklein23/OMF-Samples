@@ -16,6 +16,14 @@
 # version of the OMF specification, as outlined here:
 # http://omf-docs.readthedocs.io/en/v1.0/index.html
 
+# NOTE: this example was designed to use the following USB IR temperature sensor:
+# https://www.phidgets.com/?tier=3&catid=14&pcid=12&prodid=1041
+
+# NOTE: to install Linux Phidget support, see https://www.phidgets.com/docs/OS_-_Linux#Debian_Install
+# For general installation instructions, see https://www.phidgets.com/docs/Software_Overview#Operating_System_Support
+# To specifically enable Python support for the Phidget, see
+# https://www.phidgets.com/docs/Language_-_Python#Getting_Started_with_Python
+
 # ************************************************************************
 # Import necessary packages
 # ************************************************************************
@@ -29,9 +37,15 @@ import datetime
 import random # Used to generate sample data; comment out this line if real data is used
 import requests
 
-# Import any special packages needed for a particular hardware platform,
+# Import any special packages
 # for example, for a Raspberry PI,
 # import RPi.GPIO as GPIO
+import sys         # Used to parse error messages
+import os          # Used to sync the internal clock
+from Phidget22.Devices.TemperatureSensor import *
+from Phidget22.PhidgetException import *
+from Phidget22.Phidget import *
+from Phidget22.Net import *
 
 # ************************************************************************
 # Specify constant values (names, target URLS, et centera) needed by the script
@@ -40,22 +54,20 @@ import requests
 # Specify the name of this device, or simply use the hostname; this is the name
 # of the PI AF Element that will be created, and it'll be included in the names
 # of PI Points that get created as well
-DEVICE_NAME = (socket.gethostname()) + ""
+DEVICE_NAME = "Phidgets IR Temperature Sensor"
 #DEVICE_NAME = "MyCustomDeviceName"
 
 # Specify a device location (optional); this will be added as a static
 # string attribute to the AF Element that is created
 DEVICE_LOCATION = "IoT Test Lab"
 
-# Specify the device type; this will be made into a static AF attribute
-DEVICE_TYPE = "Development Board" # e.g. platform.machine() + " - " + platform.platform() + " - " + platform.processor()
-
 # Specify the name of the Assets type message; this will also end up becoming
 # part of the name of the PI AF Element template that is created; for example, this could be
 # "AssetsType_RaspberryPI" or "AssetsType_Dragonboard"
 # You will want to make this different for each general class of IoT module that you use
-ASSETS_MESSAGE_TYPE_NAME = DEVICE_NAME + "assets_type"
+ASSETS_MESSAGE_TYPE_NAME = DEVICE_NAME + "_assets_type"
 #ASSETS_MESSAGE_TYPE_NAME = "assets_type" + "IoT Device Model 74656" # An example
+# NoteL you can repalce DEVICE_NAME with DEVICE_TYPE if you'd like to use a common type for multiple assets
 
 # Similarly, specify the name of for the data values type; this should likewise be unique
 # for each general class of IoT device--for example, if you were running this
@@ -65,6 +77,7 @@ ASSETS_MESSAGE_TYPE_NAME = DEVICE_NAME + "assets_type"
 # you could use the same DATA_VALUES_MESSAGE_TYPE_NAME
 DATA_VALUES_MESSAGE_TYPE_NAME = DEVICE_NAME + "_data_values_type"
 #DATA_VALUES_MESSAGE_TYPE_NAME = "data_values_type" + "IoT Device Model 74656" # An example
+# NoteL you can repalce DEVICE_NAME with DEVICE_TYPE if you'd like to use a common type for multiple assets
 
 # Store the id of the container that will be used to receive live data values
 DATA_VALUES_CONTAINER_ID = DEVICE_NAME + "_data_values_container"
@@ -78,7 +91,8 @@ SEND_DATA_TO_OSISOFT_CLOUD_SERVICES = False
 # Specify the address of the destination endpoint; it should be of the form
 # http://<host/ip>:<port>/ingress/messages
 # For example, "https://myservername:8118/ingress/messages"
-TARGET_URL = "http://localhost:8118/ingress/messages"
+TARGET_URL = "https://lopezpiserver:777/ingress/messages"
+#TARGET_URL = "https://localhost:5000/edge/omf/tenants/default/namespaces/data"
 # !!! Note: if sending data to OSIsoft cloud services,
 # uncomment the below line in order to set the target URL to the OCS OMF endpoint:
 #TARGET_URL = "https://dat-a.osisoft.com/api/omf"
@@ -111,18 +125,83 @@ WEB_REQUEST_TIMEOUT_SECONDS = 30
 # certain sensors, for example, will require global interface or sensor variables
 # myExampleInterfaceKitGlobalVar = None
 
+# Define a variable for the Phidget
+ch = 0
+
+# Define helper functions to handle when the Phidget is connected or disconnected
+def PhidgetAttached(self):
+    try:
+        attached = self
+        print("\nAttach Event Detected (Information Below)")
+        print("===========================================")
+        print("Library Version: %s" % attached.getLibraryVersion())
+        print("Serial Number: %d" % attached.getDeviceSerialNumber())
+        print("Channel: %d" % attached.getChannel())
+        print("Channel Class: %s" % attached.getChannelClass())
+        print("Channel Name: %s" % attached.getChannelName())
+        print("Device ID: %d" % attached.getDeviceID())
+        print("Device Version: %d" % attached.getDeviceVersion())
+        print("Device Name: %s" % attached.getDeviceName())
+        print("Device Class: %d" % attached.getDeviceClass())
+        print("\n")
+
+    except PhidgetException as e:
+        print("Phidget Exception %i: %s" % (e.code, e.details))
+        print("Press Enter to Exit...\n")
+        readin = sys.stdin.read(1)
+        exit(1)   
+    
+def PhidgetDetached(self):
+    detached = self
+    try:
+        print("\nDetach event on Port %d Channel %d" % (detached.getHubPort(), detached.getChannel()))
+    except PhidgetException as e:
+        print("Phidget Exception %i: %s" % (e.code, e.details))
+        print("Press Enter to Exit...\n")
+        readin = sys.stdin.read(1)
+        exit(1)   
+
+def ErrorEvent(self, eCode, description):
+    print("Error %i : %s" % (eCode, description))
+
 # The following function is where you can insert specific initialization code to set up
 # sensors for a particular IoT module or platform
 def initialize_sensors():
     print("\n--- Sensors initializing...")
     try:
-		#For a raspberry pi, for example, to set up pins 4 and 5, you would add
+	#For a raspberry pi, for example, to set up pins 4 and 5, you would add
         #GPIO.setmode(GPIO.BCM)
-		#GPIO.setup(4, GPIO.IN)
-		#GPIO.setup(5, GPIO.IN)
+	#GPIO.setup(4, GPIO.IN)
+	#GPIO.setup(5, GPIO.IN)
+        print("--- Waiting 10 seconds for sensors to warm up...")
+        time.sleep(10)
+
+        # Activate the Phidget
+        global ch
+        ch = TemperatureSensor()
+        
+        # Assign event handlers
+        ch.setOnAttachHandler(PhidgetAttached)
+        ch.setOnDetachHandler(PhidgetDetached)
+        ch.setOnErrorHandler(ErrorEvent)
+
+        # Wait for the sensor to be attached
+        print("--- Waiting for the Phidget Object to be attached...")
+        ch.openWaitForAttachment(5000)
         print("--- Sensors initialized!")
-		# In short, in this example, by default,
-        # this function is called but doesn't do anything (it's just a placeholder)
+		
+        # Sync the time on this device to an internet time server
+        try:
+            print('\n--- Syncing time...')
+            os.system('sudo service ntpd stop')
+            time.sleep(1)
+            os.system('sudo ntpd -gq')
+            time.sleep(1)
+            os.system('sudo service ntpd start')
+            print('--- Success! Time is ' + str(datetime.datetime.now()))
+        except:
+            print('Error syncing time!')
+
     except Exception as ex:
 		# Log any error, if it occurs
         print(str(datetime.datetime.now()) + " Error when initializing sensors: " + str(ex))
@@ -141,6 +220,8 @@ def initialize_sensors():
 def create_data_values_message():
     # Get the current timestamp in ISO format
     timestamp = datetime.datetime.utcnow().isoformat() + 'Z'
+    # Read the Phidget
+    temperature = ch.ambientSensor.Temperature * 9/5 + 32
     # Assemble a JSON object containing the streamId and any data values
     return [
         {
@@ -150,8 +231,9 @@ def create_data_values_message():
                     "Time": timestamp,
                     # Again, in this example,
                     # we're just sending along random values for these two "sensors"
-                    "Raw Sensor Reading 1": 100*random.random(),
-                    "Raw Sensor Reading 2": 100*random.random()
+                    #"Raw Sensor Reading 1": 100*random.random(),
+                    #"Raw Sensor Reading 2": 100*random.random()
+                    "Temperature": temperature
                     # If you wanted to read, for example, the digital GPIO pins
                     # 4 and 5 on a Raspberry PI,
                     # you would add to the earlier package import section:
@@ -168,6 +250,7 @@ def create_data_values_message():
             ]
         }
     ]
+
 
 # ************************************************************************
 # Helper function: REQUIRED: wrapper function for sending an HTTPS message
@@ -224,12 +307,13 @@ def send_omf_message_to_endpoint(action, message_type, message_json):
 
 # Suppress insecure HTTPS warnings, if an untrusted certificate is used by the target endpoint
 # Remove if targetting trusted targets
-if not VERIFY_SSL:
-	try:
-		requests.packages.urllib3.disable_warnings()
-	except Exception as ex:
-		# Log any error, if it occurs
-        print(str(datetime.datetime.now()) + " Non-fatal error when disabling SSL warnings: " + str(ex))
+try:
+    if not VERIFY_SSL:
+        requests.packages.urllib3.disable_warnings()
+
+except Exception as ex:
+        # Log any error, if it occurs
+        print(str(datetime.datetime.now()) + " Possible non-fatal error when disabling SSL validation: " + str(ex))
 
 print(
     '\n--- Setup: targeting endpoint "' + TARGET_URL + '"...' +
@@ -268,10 +352,7 @@ DYNAMIC_TYPES_MESSAGE_JSON = [
                 "type": "string",
                 "isindex": True
             },
-            "Raw Sensor Reading 1": {
-                "type": "number"
-            },
-            "Raw Sensor Reading 2": {
+            "Temperature": {
                 "type": "number"
             }
             # For example, to allow you to send a string-type live data value,
@@ -374,7 +455,9 @@ if not SEND_DATA_TO_OSISOFT_CLOUD_SERVICES:
             "values": [
                 {
                     "Name": NEW_AF_ELEMENT_NAME,
-                    "Device Type": DEVICE_TYPE,
+                    "Device Type": (
+                        platform.machine() + " - " + platform.platform() + " - " + platform.processor()
+                    ),
                     "Location": DEVICE_LOCATION,
                     "Data Ingress Method": "OMF"
                 }

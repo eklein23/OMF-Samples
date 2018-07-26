@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 #Copyright 2018 OSIsoft, LLC
 #
 #Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,6 +18,10 @@
 # version of the OMF specification, as outlined here:
 # http://omf-docs.readthedocs.io/en/v1.0/index.html
 
+# NOTE: this script was designed to run on BeagleBone Blue.  To learn 
+# more about the BeagleBone Blue, visit https://beagleboard.org/blue, where
+# you can also find purchasing links
+
 # ************************************************************************
 # Import necessary packages
 # ************************************************************************
@@ -26,12 +32,16 @@ import time
 import platform
 import socket
 import datetime
-import random # Used to generate sample data; comment out this line if real data is used
+#import random # Used to generate sample data; comment out this line if real data is used
 import requests
+import urllib3 # Used to disable warnings about insecure SSL (optional)
 
 # Import any special packages needed for a particular hardware platform,
 # for example, for a Raspberry PI,
 # import RPi.GPIO as GPIO
+# This automatically initizalizes the robotics cape; to install this library, see
+# https://github.com/mcdeoliveira/rcpy
+import rcpy 
 
 # ************************************************************************
 # Specify constant values (names, target URLS, et centera) needed by the script
@@ -40,21 +50,18 @@ import requests
 # Specify the name of this device, or simply use the hostname; this is the name
 # of the PI AF Element that will be created, and it'll be included in the names
 # of PI Points that get created as well
-DEVICE_NAME = (socket.gethostname()) + ""
-#DEVICE_NAME = "MyCustomDeviceName"
+#DEVICE_NAME = (socket.gethostname()) + ""
+DEVICE_NAME = "BBBlue Robot Controller 01"
 
 # Specify a device location (optional); this will be added as a static
 # string attribute to the AF Element that is created
 DEVICE_LOCATION = "IoT Test Lab"
 
-# Specify the device type; this will be made into a static AF attribute
-DEVICE_TYPE = "Development Board" # e.g. platform.machine() + " - " + platform.platform() + " - " + platform.processor()
-
 # Specify the name of the Assets type message; this will also end up becoming
 # part of the name of the PI AF Element template that is created; for example, this could be
 # "AssetsType_RaspberryPI" or "AssetsType_Dragonboard"
 # You will want to make this different for each general class of IoT module that you use
-ASSETS_MESSAGE_TYPE_NAME = DEVICE_NAME + "assets_type"
+ASSETS_MESSAGE_TYPE_NAME = DEVICE_NAME + "_assets_type"
 #ASSETS_MESSAGE_TYPE_NAME = "assets_type" + "IoT Device Model 74656" # An example
 
 # Similarly, specify the name of for the data values type; this should likewise be unique
@@ -78,10 +85,10 @@ SEND_DATA_TO_OSISOFT_CLOUD_SERVICES = False
 # Specify the address of the destination endpoint; it should be of the form
 # http://<host/ip>:<port>/ingress/messages
 # For example, "https://myservername:8118/ingress/messages"
-TARGET_URL = "http://localhost:8118/ingress/messages"
+TARGET_URL = "https://lopezpiserver:777/ingress/messages"
 # !!! Note: if sending data to OSIsoft cloud services,
 # uncomment the below line in order to set the target URL to the OCS OMF endpoint:
-#TARGET_URL = "https://dat-a.osisoft.com/api/omf"
+#TARGET_URL = "https://qi-data.osisoft.com/api/omf"
 
 # Specify the producer token, a unique token used to identify and authorize a given OMF producer. Consult the OSIsoft Cloud Services or PI Connector Relay documentation for further information.
 PRODUCER_TOKEN = "OMFv1"
@@ -120,6 +127,10 @@ def initialize_sensors():
         #GPIO.setmode(GPIO.BCM)
 		#GPIO.setup(4, GPIO.IN)
 		#GPIO.setup(5, GPIO.IN)
+        # Set state to rcpy.RUNNING
+        rcpy.set_state(rcpy.RUNNING)
+        # Activate the magnetometer on the BeagleBone Blue
+        rcpy.mpu9250.initialize(enable_magnetometer = True)
         print("--- Sensors initialized!")
 		# In short, in this example, by default,
         # this function is called but doesn't do anything (it's just a placeholder)
@@ -139,6 +150,9 @@ def initialize_sensors():
 # reads from sensors attached to the device that's running the script
 
 def create_data_values_message():
+    # Read data from the BeagleBone Blue's built-in sensors
+    boardTemperature = rcpy.mpu9250.read_imu_temp() * 9/5 + 32
+    accelRotationAndMagneticData = rcpy.mpu9250.read()
     # Get the current timestamp in ISO format
     timestamp = datetime.datetime.utcnow().isoformat() + 'Z'
     # Assemble a JSON object containing the streamId and any data values
@@ -150,8 +164,20 @@ def create_data_values_message():
                     "Time": timestamp,
                     # Again, in this example,
                     # we're just sending along random values for these two "sensors"
-                    "Raw Sensor Reading 1": 100*random.random(),
-                    "Raw Sensor Reading 2": 100*random.random()
+                    #"Raw Sensor Reading 1": 100*random.random(),
+                    #"Raw Sensor Reading 2": 100*random.random()
+                    # For the BeagleBone Blue, indexes 0, 1, and 2 correspond to X, Y, and Z
+                    # Moreover, we're dividing acceleration by 9.80665 to convert it to units of Gs
+                    "X-acceleration": accelRotationAndMagneticData['accel'][0]/9.80665,
+                    "Y-acceleration": accelRotationAndMagneticData['accel'][1]/9.80665,
+                    "Z-acceleration": accelRotationAndMagneticData['accel'][2]/9.80665,
+                    "X-rotation": accelRotationAndMagneticData['gyro'][0],
+                    "Y-rotation": accelRotationAndMagneticData['gyro'][1],
+                    "Z-rotation": accelRotationAndMagneticData['gyro'][2],
+                    "X-magnetic field": accelRotationAndMagneticData['mag'][0],
+                    "Y-magnetic field": accelRotationAndMagneticData['mag'][1],
+                    "Z-magnetic field": accelRotationAndMagneticData['mag'][2],
+                    "Board Temperature": boardTemperature
                     # If you wanted to read, for example, the digital GPIO pins
                     # 4 and 5 on a Raspberry PI,
                     # you would add to the earlier package import section:
@@ -224,12 +250,14 @@ def send_omf_message_to_endpoint(action, message_type, message_json):
 
 # Suppress insecure HTTPS warnings, if an untrusted certificate is used by the target endpoint
 # Remove if targetting trusted targets
-if not VERIFY_SSL:
-	try:
-		requests.packages.urllib3.disable_warnings()
-	except Exception as ex:
-		# Log any error, if it occurs
-        print(str(datetime.datetime.now()) + " Non-fatal error when disabling SSL warnings: " + str(ex))
+try:
+    if not VERIFY_SSL:
+        urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+        requests.packages.urllib3.disable_warnings()
+
+except Exception as ex:
+        # Log any error, if it occurs
+        print(str(datetime.datetime.now()) + " Possible non-fatal error when disabling SSL validation: " + str(ex))
 
 print(
     '\n--- Setup: targeting endpoint "' + TARGET_URL + '"...' +
@@ -268,12 +296,18 @@ DYNAMIC_TYPES_MESSAGE_JSON = [
                 "type": "string",
                 "isindex": True
             },
-            "Raw Sensor Reading 1": {
-                "type": "number"
-            },
-            "Raw Sensor Reading 2": {
-                "type": "number"
-            }
+            #"Raw Sensor Reading 1": {"type": "number"},
+            #"Raw Sensor Reading 2": {"type": "number"}
+            "X-acceleration": {"type": "number", "description": "in Gs"},
+            "Y-acceleration": {"type": "number", "description": "in Gs"},
+            "Z-acceleration": {"type": "number", "description": "in Gs"},
+            "X-rotation": {"type": "number", "description": "in degrees per second"},
+            "Y-rotation": {"type": "number", "description": "in degrees per second"},
+            "Z-rotation": {"type": "number", "description": "in degrees per second"},
+            "X-magnetic field": {"type": "number", "description": "in microteslas"},
+            "Y-magnetic field": {"type": "number", "description": "in microteslas"},
+            "Z-magnetic field": {"type": "number", "description": "in microteslas"},
+            "Board Temperature": {"type": "number", "description": "in Fahrenheit"}
             # For example, to allow you to send a string-type live data value,
             # such as "Status", you would add
             #"Status": {
@@ -374,7 +408,9 @@ if not SEND_DATA_TO_OSISOFT_CLOUD_SERVICES:
             "values": [
                 {
                     "Name": NEW_AF_ELEMENT_NAME,
-                    "Device Type": DEVICE_TYPE,
+                    "Device Type": (
+                        platform.machine() + " - " + platform.platform() + " - " + platform.processor()
+                    ),
                     "Location": DEVICE_LOCATION,
                     "Data Ingress Method": "OMF"
                 }
@@ -438,6 +474,7 @@ if not SEND_DATA_TO_OSISOFT_CLOUD_SERVICES:
     print(
         '--- (Look for a new AF Element named "' + NEW_AF_ELEMENT_NAME + '".)\n'
     )
+
 while True:
     # Call the custom function that builds a JSON object that
     # contains new data values; see the beginning of this script

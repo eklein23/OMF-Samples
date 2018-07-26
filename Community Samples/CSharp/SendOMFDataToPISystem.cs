@@ -21,97 +21,108 @@
 // ************************************************************************
 
 using System;
-using System.Text;
 
 namespace SendOMFDataToPISystem
 {
     class Program
     {
-            // ************************************************************************
-            // Specify constant values (names, target URLS, etc.) needed by the script
-            // ************************************************************************
+        // ************************************************************************
+        // Specify constant values (names, target URLS, etc.) needed by the script
+        // ************************************************************************
 
-            // Specify the name of this device, or simply use the hostname; this is the name
-            // of the PI AF Element that will be created, and it'll be included in the names
-            // of PI Points that get created as well
-            private static String DEVICE_NAME = System.Net.Dns.GetHostName() + "_CSHARP";
-	        //DEVICE_NAME = "MyCustomDeviceName"
+        // !!! Note: if you'd like to test this code against an endpoint with
+        // an untrusted certificate, set the following flag to true to turn off
+        // certificate validation.  THIS IS INSECURE AND SHOULD NOT BE USED IN
+        // PRODUCTION DEPLOYMENTS!
+        private static Boolean TURN_OFF_CERTIFICATE_VALIDATION = false;
 
-	        // Specify a device location (optional); this will be added as a static
-	        // string attribute to the AF Element that is created
-	        private static String DEVICE_LOCATION = "IoT Test Lab";
+        // Specify the name of this device, or simply use the hostname; this is the name
+        // of the PI AF Element that will be created, and it'll be included in the names
+        // of PI Points that get created as well
+        private static String DEVICE_NAME = System.Net.Dns.GetHostName() + "_CSHARP";
+        //DEVICE_NAME = "MyCustomDeviceName"
 
-	        // Specify the name of the Assets type message; this will also end up becoming
-	        // part of the name of the PI AF Element template that is created; for example, this could be
-	        // "AssetsType_RaspberryPI" or "AssetsType_Dragonboard"
-	        // You will want to make this different for each general class of IoT module that you use
-	        private static String ASSETS_MESSAGE_TYPE_NAME = DEVICE_NAME + "_assets_type" + "";
-	        //ASSETS_MESSAGE_TYPE_NAME = "assets_type" + "IoT Device Model 74656" // An example
+        // Specify a device location (optional); this will be added as a static
+        // string attribute to the AF Element that is created
+        private static String DEVICE_LOCATION = "IoT Test Lab";
 
-	        // Similarly, specify the name of for the data values type; this should likewise be unique
-	        // for each general class of IoT device--for example, if you were running this
-	        // script on two different devices, each with different numbers and kinds of sensors,
-	        // you'd specify a different data values message type name
-	        // when running the script on each device.  If both devices were the same,
-	        // you could use the same DATA_VALUES_MESSAGE_TYPE_NAME
-	        private static String DATA_VALUES_MESSAGE_TYPE_NAME = "data_values_type" + "";
-	        //DATA_VALUES_MESSAGE_TYPE_NAME = "data_values_type" + "IoT Device Model 74656" // An example
+        // Specify the name of the Assets type message; this will also end up becoming
+        // part of the name of the PI AF Element template that is created; for example, this could be
+        // "AssetsType_RaspberryPI" or "AssetsType_Dragonboard"
+        // You will want to make this different for each general class of IoT module that you use
+        private static String ASSETS_MESSAGE_TYPE_NAME = DEVICE_NAME + "_assets_type";
+        //ASSETS_MESSAGE_TYPE_NAME = "assets_type" + "IoT Device Model 74656" // An example
 
-	        // Store the id of the container that will be used to receive live data values
-	        private static String DATA_VALUES_CONTAINER_ID = (DEVICE_NAME + "_data_values_container");
+        // Similarly, specify the name of for the data values type; this should likewise be unique
+        // for each general class of IoT device--for example, if you were running this
+        // script on two different devices, each with different numbers and kinds of sensors,
+        // you'd specify a different data values message type name
+        // when running the script on each device.  If both devices were the same,
+        // you could use the same DATA_VALUES_MESSAGE_TYPE_NAME
+        private static String DATA_VALUES_MESSAGE_TYPE_NAME = "data_values_type" + "";
+        //DATA_VALUES_MESSAGE_TYPE_NAME = "data_values_type" + "IoT Device Model 74656" // An example
 
-	        // Specify the number of seconds to sleep in between value messages
-	        private static int NUMBER_OF_SECONDS_BETWEEN_VALUE_MESSAGES = 2;
+        // Store the id of the container that will be used to receive live data values
+        private static String DATA_VALUES_CONTAINER_ID = DEVICE_NAME + "_data_values_container";
 
-            // Specify whether you're sending data to OSIsoft cloud services or not
-            private static Boolean SEND_DATA_TO_OSISOFT_CLOUD_SERVICES = false;
+        // Specify the number of seconds to sleep in between value messages
+        private static int NUMBER_OF_SECONDS_BETWEEN_VALUE_MESSAGES = 2;
 
-	        // Specify the address of the destination endpoint; it should be of the form
-	        // http://<host/ip>:<port>/ingress/messages
-	        // For example, "https://myservername:8118/ingress/messages"
-	        private static String TARGET_URL = "https://lopezpiserver:777/ingress/messages";
-	        // !!! Note: if sending data to OSIsoft cloud services,
-	        // uncomment the below line in order to set the target URL to the OCS OMF endpoint:
-	        //TARGET_URL = "https://dat-a.osisoft.com/api/omf"
+        // Specify whether you're sending data to OSIsoft cloud services or not
+        private static Boolean SEND_DATA_TO_OSISOFT_CLOUD_SERVICES = false;
 
-	        // Specify the producer token, a unique token used to identify and authorize a given OMF producer. Consult the OSIsoft Cloud Services or PI Connector Relay documentation for further information.
-	        private static String PRODUCER_TOKEN = "OMFv1";
-	        // !!! Note: if sending data to OSIsoft cloud services, the producer token should be the
-	        // security token obtained for a particular Tenant and Publisher; see
-	        // http://qi-docs.readthedocs.io/en/latest/OMF_Ingress_Specification.html//headers
-	
-	        // ************************************************************************
-	        // Helper function: run any code needed to initialize local sensors, if necessary for this hardware
-	        // ************************************************************************
+        // Specify the address of the destination endpoint; it should be of the form
+        // http://<host/ip>:<port>/ingress/messages
+        // For example, "https://myservername:5460/ingress/messages"
+        private static String TARGET_URL = "https://lopezpiserver:777/ingress/messages";
+        // !!! Note: if sending data to OSIsoft cloud services,
+        // uncomment the below line in order to set the target URL to the OCS OMF endpoint:
+        //TARGET_URL = "https://dat-a.osisoft.com/api/omf"
+        // !!! Note: if sending data to a local Edge Data Store,
+        // uncomment the below line in order to set the target URL to the default EDS endpoint:
+        //TARGET_URL = "https://localhost:5000/edge/omf/tenants/default/namespaces/data";
 
-	        // Below is where you can initialize any global variables that are needed by your application;
-	        // certain sensors, for example, will require global interface or sensor variables
-	        // myExampleInterfaceKitGlobalVar = None
+        // Specify the producer token, a unique token used to identify and authorize a given OMF producer. Consult the OSIsoft Cloud Services or PI Connector Relay documentation for further information.
+        private static String PRODUCER_TOKEN = "OMFv1";
+        // !!! Note: if sending data to OSIsoft cloud services, the producer token should be the
+        // security token obtained for a particular Tenant and Publisher; see
+        // http://qi-docs.readthedocs.io/en/latest/OMF_Ingress_Specification.html//headers
+        // !!! Note: if sending data to the Edge Data Store, for information on the producer token
+        // that should be used, see
+        // http://osisoft-edge.readthedocs.io/en/latest/EdgeSecurity.html#api-security 
 
-	        // The following function is where you can insert specific initialization code to set up
-	        // sensors for a particular IoT module or platform
-	        private static void initialize_sensors()
+        // ************************************************************************
+        // Helper function: run any code needed to initialize local sensors, if necessary for this hardware
+        // ************************************************************************
+
+        // Below is where you can initialize any global variables that are needed by your application;
+        // certain sensors, for example, will require global interface or sensor variables
+        // myExampleInterfaceKitGlobalVar = None
+
+        // The following function is where you can insert specific initialization code to set up
+        // sensors for a particular IoT module or platform
+        private static void initialize_sensors()
+        {
+            Console.WriteLine("\n--- Sensors initializing...");
+            try
             {
-                Console.WriteLine("\n--- Sensors initializing...");
-                try
-                {
-                    // In this case, initialize the random generator
-                     rand = new Random();
+                // In this case, initialize the random generator
+                rand = new Random();
 
-                    //For a raspberry pi, for example, to set up pins 4 and 5, you would add
-                    //GPIO.setmode(GPIO.BCM)
-                    //GPIO.setup(4, GPIO.IN)
-                    //GPIO.setup(5, GPIO.IN)
-                    Console.WriteLine("--- Sensors initialized!");
-                    // In short, in this example, by default,
-                    // this function is called but doesn't do anything (it's just a placeholder)
-                }
-                catch (Exception ex)
-                {
-                    // Log any error, if it occurs
-                    Console.WriteLine(DateTime.Now + " Error when initializing sensors: " + ex.Message);
-                }
+                //For a raspberry pi, for example, to set up pins 4 and 5, you would add
+                //GPIO.setmode(GPIO.BCM)
+                //GPIO.setup(4, GPIO.IN)
+                //GPIO.setup(5, GPIO.IN)
+                Console.WriteLine("--- Sensors initialized!");
+                // In short, in this example, by default,
+                // this function is called but doesn't do anything (it's just a placeholder)
             }
+            catch (Exception ex)
+            {
+                // Log any error, if it occurs
+                Console.WriteLine("!!!!! " + DateTime.Now + " Error when initializing sensors: " + ex.Message);
+            }
+        }
 
         // ************************************************************************
         // Helper function: REQUIRED: create a JSON message that contains sensor data values
@@ -126,7 +137,8 @@ namespace SendOMFDataToPISystem
         static Random rand;
         private static String create_data_values_message()
         {
-            try { 
+            try
+            {
                 // Get the current timestamp in ISO format
                 String timestamp = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ");
                 // Assemble a JSON object containing the streamId and any data values
@@ -160,7 +172,7 @@ namespace SendOMFDataToPISystem
             catch (Exception ex)
             {
                 // Log any error, if it occurs
-                Console.WriteLine((DateTime.Now) + " Error during web request: " + ex.Message);
+                Console.WriteLine("!!!!! " + DateTime.Now + " Error during web request: " + ex.Message);
                 return "{}";
             }
         }
@@ -178,10 +190,10 @@ namespace SendOMFDataToPISystem
             try
             {
                 // Parse the message JSON into bytes
-                byte[] message_json_bytes = Encoding.ASCII.GetBytes(message_json);
+                byte[] message_json_bytes = System.Text.Encoding.ASCII.GetBytes(message_json);
 
                 // Create a connection object
-                System.Net.HttpWebRequest myRequest = (System.Net.HttpWebRequest) System.Net.WebRequest.Create(TARGET_URL);
+                System.Net.HttpWebRequest myRequest = (System.Net.HttpWebRequest)System.Net.WebRequest.Create(TARGET_URL);
                 myRequest.Method = "POST";
 
                 // The default is that no callback function is set and the ServerCertificateValidationCallback property is null.
@@ -199,30 +211,60 @@ namespace SendOMFDataToPISystem
                 myRequest.Headers.Add("omfversion", "1.0");
 
                 // !!! Note: if desired, uncomment the below line to Console.WriteLine the outgoing message
-                Console.WriteLine("\nOutgoing message: " + message_json);
+                Console.WriteLine("\nOutgoing message:\n" + message_json);
                 // Send the request, and collect the response
                 System.IO.Stream requestStream = myRequest.GetRequestStream();
                 requestStream.Write(message_json_bytes, 0, message_json_bytes.Length);
                 requestStream.Close();
 
                 // Show the response
-                System.Net.HttpWebResponse response = (System.Net.HttpWebResponse) myRequest.GetResponse();
-                Console.WriteLine("Response code: " + response.StatusCode);
+                System.Net.HttpWebResponse response = (System.Net.HttpWebResponse)myRequest.GetResponse();
+                Console.WriteLine("Response code: " + (int)response.StatusCode);
+                // For more about response codes, see
+                // https://omf-docs.readthedocs.io/en/v1.0/Standard_Responses.html
+            }
+            catch (System.Net.WebException ex)
+            {
+                if (ex.Response != null)
+                {
+                    // Catch a web-specific error; get the response stream, and read throuh it
+                    using (var responseStream = ex.Response.GetResponseStream())
+                    using (var reader = new System.IO.StreamReader(responseStream))
+                    {
+                        // Print out the specific web error to the console
+						Console.WriteLine("!!!!! " + DateTime.Now + " Error during web request: " + reader.ReadToEnd() + " (" + ex.Message + ")");
+                    }
+                } else
+                {
+                    Console.WriteLine("!!!!! " + DateTime.Now + " General error during web request: " + ex.Message);
+                }
             }
             catch (Exception ex)
             {
-                // Log any error, if it occurs
-                Console.WriteLine((DateTime.Now) + " Error during web request: " + ex.Message);
+                // Log any GENERAL error, if it occurs
+                Console.WriteLine("!!!!! " + DateTime.Now + " General error during web request: " + ex.Message);
             }
         }
 
         static void Main(string[] args)
         {
             Console.WriteLine(
-		        "\n--- Setup: targeting endpoint \"" + TARGET_URL + "\"..." +
-		        "\n--- Now sending types, defining containers, and creating assets and links..." +
-		        "\n--- (Note: a successful message will return a 20X response code.)\n"
-		    );
+                "\n--- Setup: targeting endpoint \"" + TARGET_URL + "\"..." +
+                "\n--- Now sending types, defining containers, and creating assets and links..." +
+                "\n--- (Note: a successful message will return a 20X response code.)\n"
+            );
+
+            // If desired, turn off certificate validation
+            if (TURN_OFF_CERTIFICATE_VALIDATION)
+            {
+                // Disable certificate validation
+                System.Net.ServicePointManager.ServerCertificateValidationCallback += (sender, certificate, chain, sslPolicyErrors) => true;
+                // Print a warning that certificate validation has been turned off
+                Console.WriteLine(
+                    "\n--- !!!!! CERTIFICATE VALIDATION HAS BEEN TURNED OFF !!!!!" +
+                    "\n--- !!!!! ALL CERTIFICATES WILL BE ACCEPTED !!!!!"
+                );
+            }
 
             // ************************************************************************
             // Create a JSON packet to define the types of streams that will be sent
@@ -275,10 +317,11 @@ namespace SendOMFDataToPISystem
             // ************************************************************************
 
             send_omf_message_to_endpoint("create", "Type", DYNAMIC_TYPES_MESSAGE_JSON);
-		
-		    // !!! Note: if sending data to OCS, static types are not included!
-		    if (!SEND_DATA_TO_OSISOFT_CLOUD_SERVICES) {
-		        String STATIC_TYPES_MESSAGE_JSON = "[" +
+
+            // !!! Note: if sending data to OCS, static types are not included!
+            if (!SEND_DATA_TO_OSISOFT_CLOUD_SERVICES)
+            {
+                String STATIC_TYPES_MESSAGE_JSON = "[" +
                     // This asset type is used to define a PI AF Element that will be created;
                     // this type also defines two static string attributes that will be created
                     // as well; feel free to rename these or add additional
@@ -341,21 +384,22 @@ namespace SendOMFDataToPISystem
 
             send_omf_message_to_endpoint("create", "Container", CONTAINERS_MESSAGE_JSON);
 
-		    // !!! Note: if sending data to OCS, assets and links are not included!
-		    if (!SEND_DATA_TO_OSISOFT_CLOUD_SERVICES) {
-		
-			    // ************************************************************************
-		        // Create a JSON packet to containing the asset and
-		        // linking data for the PI AF asset that will be made
-		        // ************************************************************************
+            // !!! Note: if sending data to OCS, assets and links are not included!
+            if (!SEND_DATA_TO_OSISOFT_CLOUD_SERVICES)
+            {
 
-		        // Here is where you can specify values for the static PI AF attributes;
-		        // in this case, we"re auto-populating the Device Type," + 
-		        // but you can manually hard-code in values if you wish
-		        // we also add the LINKS to be made, which will both position the new PI AF
-		        // Element, so it will show up in AF, and will associate the PI Points
-		        // that will be created with that Element
-		        String ASSETS_AND_LINKS_MESSAGE_JSON = "[" +
+                // ************************************************************************
+                // Create a JSON packet to containing the asset and
+                // linking data for the PI AF asset that will be made
+                // ************************************************************************
+
+                // Here is where you can specify values for the static PI AF attributes;
+                // in this case, we"re auto-populating the Device Type," + 
+                // but you can manually hard-code in values if you wish
+                // we also add the LINKS to be made, which will both position the new PI AF
+                // Element, so it will show up in AF, and will associate the PI Points
+                // that will be created with that Element
+                String ASSETS_AND_LINKS_MESSAGE_JSON = "[" +
                     "{" +
                         // This will end up creating a new PI AF Element with
                         // this specific name and static attribute values
@@ -408,7 +452,7 @@ namespace SendOMFDataToPISystem
 
                 send_omf_message_to_endpoint("create", "Data", ASSETS_AND_LINKS_MESSAGE_JSON);
 
-		    }
+            }
 
             // ************************************************************************
             // Initialize sensors prior to sending data (if needed), using the function defined earlier
@@ -422,30 +466,35 @@ namespace SendOMFDataToPISystem
             // ************************************************************************
 
             Console.WriteLine(
-		        "\n--- Now sending live data every " + (NUMBER_OF_SECONDS_BETWEEN_VALUE_MESSAGES) +
-		        " second(s) for device \"" + NEW_AF_ELEMENT_NAME + "\"... (press CTRL+C to quit at any time)\n"
-		    );
-		    if (!SEND_DATA_TO_OSISOFT_CLOUD_SERVICES) {
-		        Console.WriteLine(
-		            "--- (Look for a new AF Element named \"" + NEW_AF_ELEMENT_NAME + "\".)\n"
-		        );
-		    }
-		    while (true) {
-		        // Call the custom function that builds a JSON object that
-		        // contains new data values; see the beginning of this script
-		        String VALUES_MESSAGE_JSON = create_data_values_message();
+                "\n--- Now sending live data every " + (NUMBER_OF_SECONDS_BETWEEN_VALUE_MESSAGES) +
+                " second(s) for device \"" + NEW_AF_ELEMENT_NAME + "\"... (press CTRL+C to quit at any time)\n"
+            );
+            if (!SEND_DATA_TO_OSISOFT_CLOUD_SERVICES)
+            {
+                Console.WriteLine(
+                    "--- (Look for a new AF Element named \"" + NEW_AF_ELEMENT_NAME + "\".)\n"
+                );
+            }
+            while (true)
+            {
+                // Call the custom function that builds a JSON object that
+                // contains new data values; see the beginning of this script
+                String VALUES_MESSAGE_JSON = create_data_values_message();
 
                 // Send the JSON message to the target URL
                 send_omf_message_to_endpoint("create", "Data", VALUES_MESSAGE_JSON);
 
-		        // Send the next message after the required interval
-		        try {
-                System.Threading.Thread.Sleep(NUMBER_OF_SECONDS_BETWEEN_VALUE_MESSAGES * 1000);
-			    } catch (Exception ex) {
-				        // Log any error, if it occurs
-		            Console.WriteLine((DateTime.Now) + " Error during pause: " + ex.Message); 
-			    }
-		    }
+                // Send the next message after the required interval
+                try
+                {
+                    System.Threading.Thread.Sleep(NUMBER_OF_SECONDS_BETWEEN_VALUE_MESSAGES * 1000);
+                }
+                catch (Exception ex)
+                {
+                    // Log any error, if it occurs
+                    Console.WriteLine("!!!!! " + DateTime.Now + " Error during pause: " + ex.Message);
+                }
+            }
         }
     }
 }

@@ -16,18 +16,34 @@
 # version of the OMF specification, as outlined here:
 # http://omf-docs.readthedocs.io/en/v1.0/index.html
 
+# NOTE: this program was designed to run on a WiPy 3.0 board that is mounted
+# within a Pysense sensor board; to learn more about (and purchase) that hardware,
+# see https://pycom.io/product/wipy-3/ and https://pycom.io/product/pysense/
+
+# NOTE: for to protect and enhance the above hardware, you may wish to add
+# a protective case (https://pycom.io/product/pycase-grey/) and external antenna
+# (https://pycom.io/product/external-wifi-antenna/)
+
 # ************************************************************************
 # Import necessary packages
 # ************************************************************************
 
-# Import packages
-import json
+# Import Pysense packages; download them from
+# https://github.com/pycom/pycom-libraries/tree/master/pysense/lib
+from pysense import Pysense
+from LTR329ALS01 import LTR329ALS01
+from LIS2HH12 import LIS2HH12
+from SI7006A20 import SI7006A20
+from MPL3115A2 import MPL3115A2
+from MPL3115A2 import ALTITUDE
+# NOTE: in order to use the above libraries, you must also download into your lib folder
+# the pycoproc.py library from https://github.com/pycom/pycom-libraries/blob/master/lib/pycoproc/pycoproc.py
+import machine
+import pycom
+#include datetime
 import time
-import platform
-import socket
-import datetime
-import random # Used to generate sample data; comment out this line if real data is used
-import requests
+import urequest # Download this from https://github.com/micropython/micropython-lib/blob/master/urequests/urequests.py
+import json
 
 # Import any special packages needed for a particular hardware platform,
 # for example, for a Raspberry PI,
@@ -40,7 +56,7 @@ import requests
 # Specify the name of this device, or simply use the hostname; this is the name
 # of the PI AF Element that will be created, and it'll be included in the names
 # of PI Points that get created as well
-DEVICE_NAME = (socket.gethostname()) + ""
+DEVICE_NAME = "WiPy IIoT Module 1"
 #DEVICE_NAME = "MyCustomDeviceName"
 
 # Specify a device location (optional); this will be added as a static
@@ -48,13 +64,13 @@ DEVICE_NAME = (socket.gethostname()) + ""
 DEVICE_LOCATION = "IoT Test Lab"
 
 # Specify the device type; this will be made into a static AF attribute
-DEVICE_TYPE = "Development Board" # e.g. platform.machine() + " - " + platform.platform() + " - " + platform.processor()
+DEVICE_TYPE = "WiPy Development Board"
 
 # Specify the name of the Assets type message; this will also end up becoming
 # part of the name of the PI AF Element template that is created; for example, this could be
 # "AssetsType_RaspberryPI" or "AssetsType_Dragonboard"
 # You will want to make this different for each general class of IoT module that you use
-ASSETS_MESSAGE_TYPE_NAME = DEVICE_NAME + "assets_type"
+ASSETS_MESSAGE_TYPE_NAME = DEVICE_NAME + "_assets_type"
 #ASSETS_MESSAGE_TYPE_NAME = "assets_type" + "IoT Device Model 74656" # An example
 
 # Similarly, specify the name of for the data values type; this should likewise be unique
@@ -78,7 +94,7 @@ SEND_DATA_TO_OSISOFT_CLOUD_SERVICES = False
 # Specify the address of the destination endpoint; it should be of the form
 # http://<host/ip>:<port>/ingress/messages
 # For example, "https://myservername:8118/ingress/messages"
-TARGET_URL = "http://localhost:8118/ingress/messages"
+TARGET_URL = "https://lopezpiserver:777/ingress/messages"
 # !!! Note: if sending data to OSIsoft cloud services,
 # uncomment the below line in order to set the target URL to the OCS OMF endpoint:
 #TARGET_URL = "https://dat-a.osisoft.com/api/omf"
@@ -92,24 +108,52 @@ PRODUCER_TOKEN = "OMFv1"
 #PRODUCER_TOKEN = ""
 
 # ************************************************************************
-# Specify options for sending web requests to the target
-# ************************************************************************
-
-# If self-signed certificates are used (true by default),
-# do not verify HTTPS SSL certificates; normally, leave this as is
-VERIFY_SSL = False
-
-# Specify the timeout, in seconds, for sending web requests
-# (if it takes longer than this to send a message, an error will be thrown)
-WEB_REQUEST_TIMEOUT_SECONDS = 30
-
-# ************************************************************************
 # Helper function: run any code needed to initialize local sensors, if necessary for this hardware
 # ************************************************************************
 
 # Below is where you can initialize any global variables that are needed by your applicatio;
 # certain sensors, for example, will require global interface or sensor variables
 # myExampleInterfaceKitGlobalVar = None
+py = Pysense()
+lightSensor = LTR329ALS01(py) # In lux
+accelerometer = LIS2HH12(py) # In Gs
+tempHumiditySensor = SI7006A20(py) # in % and C
+barometer = MPL3115A2(py, mode=ALTITUDE) # in Pa or meters
+
+# Enable the heartbeat LED
+pycom.heartbeat(True)
+
+# Prepare to sync the clock
+rtc = machine.RTC()
+
+# The following helper function prepends a zero to a number if it is less than
+# 10, in order to guarantee two-digit hour, month, day, and minute, and second
+def prependZeroIfNeeded(number):
+    if (number >= 10):
+        return ("" + str(number))
+    else:
+        return ("0" + str(number))
+
+# The following helper function pretty-prints out the current time from the rtc
+# in the ISO format needed by OMFv1
+def getCurrentTimestampString():
+    # The RTC returns a time in the format (2018, 6, 11, 19, 3, 42, 62911, None)
+    currentRTCTime = rtc.now()
+    timestamp = (
+        str(currentRTCTime[0]) +
+        "-" +
+        prependZeroIfNeeded(currentRTCTime[1]) +
+        "-" +
+        prependZeroIfNeeded(currentRTCTime[2]) +
+        "T" +
+        prependZeroIfNeeded(currentRTCTime[3]) +
+        ":" +
+        prependZeroIfNeeded(currentRTCTime[4]) +
+        ":" +
+        prependZeroIfNeeded(currentRTCTime[5]) +
+        "Z"
+    )
+    return timestamp
 
 # The following function is where you can insert specific initialization code to set up
 # sensors for a particular IoT module or platform
@@ -120,12 +164,23 @@ def initialize_sensors():
         #GPIO.setmode(GPIO.BCM)
 		#GPIO.setup(4, GPIO.IN)
 		#GPIO.setup(5, GPIO.IN)
+
+        # Turn off the hearbeat LED
+        pycom.heartbeat(False)
+
+        # Sync the clock!
+        print("Syncing clock...")
+        rtc.ntp_sync("pool.ntp.org")
+        time.sleep(5)
+        print("Clock set to: " + getCurrentTimestampString());
+
         print("--- Sensors initialized!")
 		# In short, in this example, by default,
         # this function is called but doesn't do anything (it's just a placeholder)
     except Exception as ex:
 		# Log any error, if it occurs
-        print(str(datetime.datetime.now()) + " Error when initializing sensors: " + str(ex))
+        #print(str(datetime.datetime.now()) + " Error when initializing sensors: " + str(ex))
+        print(getCurrentTimestampString() + " Error when initializing sensors: " + str(ex))
 
 # ************************************************************************
 # Helper function: REQUIRED: create a JSON message that contains sensor data values
@@ -140,7 +195,8 @@ def initialize_sensors():
 
 def create_data_values_message():
     # Get the current timestamp in ISO format
-    timestamp = datetime.datetime.utcnow().isoformat() + 'Z'
+    timestamp = getCurrentTimestampString() #datetime.datetime.utcnow().isoformat() + 'Z'
+
     # Assemble a JSON object containing the streamId and any data values
     return [
         {
@@ -150,8 +206,16 @@ def create_data_values_message():
                     "Time": timestamp,
                     # Again, in this example,
                     # we're just sending along random values for these two "sensors"
-                    "Raw Sensor Reading 1": 100*random.random(),
-                    "Raw Sensor Reading 2": 100*random.random()
+                    #"Raw Sensor Reading 1": 100*random.random(),
+                    #"Raw Sensor Reading 2": 100*random.random()
+                    "Light Sensor 1": lightSensor.light()[0],
+                    "Light Sensor 2": lightSensor.light()[1],
+                    "X-acceleration": accelerometer.acceleration()[0],
+                    "Y-acceleration": accelerometer.acceleration()[1],
+                    "Z-acceleration": accelerometer.acceleration()[2],
+                    "Humidity": tempHumiditySensor.humidity(),
+                    "Temperature": (32 + 9/5*tempHumiditySensor.temperature()),
+                    "Altitude": barometer.altitude(),
                     # If you wanted to read, for example, the digital GPIO pins
                     # 4 and 5 on a Raspberry PI,
                     # you would add to the earlier package import section:
@@ -195,12 +259,11 @@ def send_omf_message_to_endpoint(action, message_type, message_json):
         print('\nOutgoing message: ' + json.dumps(message_json));
         # Send the request, and collect the response; json.dumps is used to
         # properly format the message JSON so that it can be sent as a web request
-        response = requests.post(
+        response = urequest.request(
+            "POST",
             TARGET_URL,
             headers=web_request_header,
-            data=json.dumps(message_json),
-            verify=VERIFY_SSL,
-            timeout=WEB_REQUEST_TIMEOUT_SECONDS
+            data=json.dumps(message_json)
         )
         # Print a debug message, if desired; note: you should receive a
         # response code 200 or 202 if the request was successful!
@@ -215,21 +278,8 @@ def send_omf_message_to_endpoint(action, message_type, message_json):
         )
     except Exception as ex:
         # Log any error, if it occurs
-        print(str(datetime.datetime.now()) + " Error during web request: " + str(ex))
-
-# ************************************************************************
-# Turn off HTTPS warnings, if desired
-# (if the default certificate configuration was used by the PI Connector)
-# ************************************************************************
-
-# Suppress insecure HTTPS warnings, if an untrusted certificate is used by the target endpoint
-# Remove if targetting trusted targets
-if not VERIFY_SSL:
-	try:
-		requests.packages.urllib3.disable_warnings()
-	except Exception as ex:
-		# Log any error, if it occurs
-        print(str(datetime.datetime.now()) + " Non-fatal error when disabling SSL warnings: " + str(ex))
+        #print(str(datetime.datetime.now()) + " Error during web request: " + str(ex))
+        print(getCurrentTimestampString() + " Error during web request: " + str(ex))
 
 print(
     '\n--- Setup: targeting endpoint "' + TARGET_URL + '"...' +
@@ -268,12 +318,16 @@ DYNAMIC_TYPES_MESSAGE_JSON = [
                 "type": "string",
                 "isindex": True
             },
-            "Raw Sensor Reading 1": {
-                "type": "number"
-            },
-            "Raw Sensor Reading 2": {
-                "type": "number"
-            }
+            #"Raw Sensor Reading 1": {"type": "number", "description":""},
+            #"Raw Sensor Reading 2": {"type": "number", "description":""}
+            "Light Sensor 1": {"type": "number", "description":"(in Lux)"},
+            "Light Sensor 2": {"type": "number", "description":"(in Lux)"},
+            "X-acceleration": {"type": "number", "description":"(in Gs)"},
+            "Y-acceleration": {"type": "number", "description":"(in Gs)"},
+            "Z-acceleration": {"type": "number", "description":"(in Gs)"},
+            "Humidity": {"type": "number", "description":"(in %)"},
+            "Temperature": {"type": "number", "description":"(in F)"},
+            "Altitude": {"type": "number", "description":"(in meters)"}
             # For example, to allow you to send a string-type live data value,
             # such as "Status", you would add
             #"Status": {
@@ -439,12 +493,18 @@ if not SEND_DATA_TO_OSISOFT_CLOUD_SERVICES:
         '--- (Look for a new AF Element named "' + NEW_AF_ELEMENT_NAME + '".)\n'
     )
 while True:
+    # Turn on the hearbeat LED!
+    pycom.rgbled(0x050000);
+
     # Call the custom function that builds a JSON object that
     # contains new data values; see the beginning of this script
     VALUES_MESSAGE_JSON = create_data_values_message()
 
-    # Send the JSON message to the target URL
+    # Send the JSON message to the target URL;
     send_omf_message_to_endpoint("create", "Data", VALUES_MESSAGE_JSON)
+
+    # Turn off the hearbeat LED!
+    pycom.rgbled(0);
 
     # Send the next message after the required interval
     time.sleep(NUMBER_OF_SECONDS_BETWEEN_VALUE_MESSAGES)
