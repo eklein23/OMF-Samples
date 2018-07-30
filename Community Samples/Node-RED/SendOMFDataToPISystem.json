@@ -1,0 +1,564 @@
+[
+    {
+        "id": "9b376a45.563e98",
+        "type": "tab",
+        "label": "Simple Node-RED OMF Example",
+        "disabled": false,
+        "info": ""
+    },
+    {
+        "id": "1348deea.b6d121",
+        "type": "http request",
+        "z": "9b376a45.563e98",
+        "name": "POST the OMF HTTPS request",
+        "method": "POST",
+        "ret": "txt",
+        "url": "",
+        "tls": "5b90caa7.01e8f4",
+        "x": 1270,
+        "y": 260,
+        "wires": [
+            [
+                "d9ba0875.2bd3c8",
+                "19c447bb.4ee4b8"
+            ]
+        ]
+    },
+    {
+        "id": "afda824f.c1d73",
+        "type": "change",
+        "z": "9b376a45.563e98",
+        "name": "Set the target URL and producer token",
+        "rules": [
+            {
+                "t": "set",
+                "p": "url",
+                "pt": "msg",
+                "to": "https://dloserver2016r2.local:8118/ingress/messages",
+                "tot": "str"
+            },
+            {
+                "t": "set",
+                "p": "producerToken",
+                "pt": "msg",
+                "to": "uid=41570fd7-1a7c-46fc-a6c0-c03aa973fdd2&sig=az5RilkdL6Nq2qgkj64lNRau6M8X59LDLitGKMfWFUM=",
+                "tot": "str"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 270,
+        "y": 200,
+        "wires": [
+            [
+                "3722d399.64851c"
+            ]
+        ]
+    },
+    {
+        "id": "b8bd6a9.37b5698",
+        "type": "function",
+        "z": "9b376a45.563e98",
+        "name": "Set the OMF dynamic and static type message headers",
+        "func": "// Set headers required by the OMF specification; see\n// https://omf-docs.readthedocs.io/en/v1.0/Headers.html\nmsg.headers = {};\nmsg.headers['producertoken'] = msg.producerToken;\n// The message type needs to match the data being sent\nmsg.headers['messagetype'] = 'type';\nmsg.headers['action'] = 'create';\nmsg.headers['messageformat'] = 'JSON';\nmsg.headers['omfversion'] = '1.0';\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "x": 850,
+        "y": 200,
+        "wires": [
+            [
+                "700e7d76.b4b384"
+            ]
+        ]
+    },
+    {
+        "id": "d9ba0875.2bd3c8",
+        "type": "debug",
+        "z": "9b376a45.563e98",
+        "name": "Response to OMF types HTTPS request",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "x": 1620,
+        "y": 260,
+        "wires": []
+    },
+    {
+        "id": "b9e160c9.33b86",
+        "type": "http request",
+        "z": "9b376a45.563e98",
+        "name": "POST the OMF HTTPS request",
+        "method": "POST",
+        "ret": "txt",
+        "url": "",
+        "tls": "5b90caa7.01e8f4",
+        "x": 1270,
+        "y": 420,
+        "wires": [
+            [
+                "59ab2c02.8c8b14",
+                "90c02d60.1e281"
+            ]
+        ]
+    },
+    {
+        "id": "19c447bb.4ee4b8",
+        "type": "function",
+        "z": "9b376a45.563e98",
+        "name": "Set the OMF container message headers",
+        "func": "// Set headers required by the OMF specification; see\n// https://omf-docs.readthedocs.io/en/v1.0/Headers.html\nmsg.headers = {};\nmsg.headers['producertoken'] = msg.producerToken;\n// The message type needs to match the data being sent\nmsg.headers['messagetype'] = 'container';\nmsg.headers['action'] = 'create';\nmsg.headers['messageformat'] = 'JSON';\nmsg.headers['omfversion'] = '1.0';\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "x": 900,
+        "y": 360,
+        "wires": [
+            [
+                "88f8989c.024b78"
+            ]
+        ]
+    },
+    {
+        "id": "59ab2c02.8c8b14",
+        "type": "debug",
+        "z": "9b376a45.563e98",
+        "name": "Response to OMF container HTTPS request",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "x": 1630,
+        "y": 420,
+        "wires": []
+    },
+    {
+        "id": "620814c8.56e3bc",
+        "type": "http request",
+        "z": "9b376a45.563e98",
+        "name": "POST the OMF HTTPS request",
+        "method": "POST",
+        "ret": "txt",
+        "url": "",
+        "tls": "5b90caa7.01e8f4",
+        "x": 1270,
+        "y": 580,
+        "wires": [
+            [
+                "dca54467.876778",
+                "be98d17f.5798f"
+            ]
+        ]
+    },
+    {
+        "id": "90c02d60.1e281",
+        "type": "function",
+        "z": "9b376a45.563e98",
+        "name": "Set the OMF data message headers",
+        "func": "// Set headers required by the OMF specification; see\n// https://omf-docs.readthedocs.io/en/v1.0/Headers.html\nmsg.headers = {};\nmsg.headers['producertoken'] = msg.producerToken;\n// The message type needs to match the data being sent\nmsg.headers['messagetype'] = 'data';\nmsg.headers['action'] = 'create';\nmsg.headers['messageformat'] = 'JSON';\nmsg.headers['omfversion'] = '1.0';\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "x": 910,
+        "y": 520,
+        "wires": [
+            [
+                "6faa2444.4c6b3c"
+            ]
+        ]
+    },
+    {
+        "id": "dca54467.876778",
+        "type": "debug",
+        "z": "9b376a45.563e98",
+        "name": "Response to OMF links and asset HTTPS request",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "x": 1650,
+        "y": 580,
+        "wires": []
+    },
+    {
+        "id": "96d485fc.d8efe8",
+        "type": "http request",
+        "z": "9b376a45.563e98",
+        "name": "POST the OMF HTTPS request",
+        "method": "POST",
+        "ret": "txt",
+        "url": "",
+        "tls": "5b90caa7.01e8f4",
+        "x": 1270,
+        "y": 740,
+        "wires": [
+            [
+                "bd7141d4.8bc8b",
+                "301fbaf1.525796"
+            ]
+        ]
+    },
+    {
+        "id": "bd7141d4.8bc8b",
+        "type": "debug",
+        "z": "9b376a45.563e98",
+        "name": "Response to OMF data values HTTPS request",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "x": 1640,
+        "y": 740,
+        "wires": []
+    },
+    {
+        "id": "be98d17f.5798f",
+        "type": "function",
+        "z": "9b376a45.563e98",
+        "name": "Set the OMF data message headers",
+        "func": "// Set headers required by the OMF specification; see\n// https://omf-docs.readthedocs.io/en/v1.0/Headers.html\nmsg.headers = {};\nmsg.headers['producertoken'] = msg.producerToken;\n// The message type needs to match the data being sent\nmsg.headers['messagetype'] = 'data';\nmsg.headers['action'] = 'create';\nmsg.headers['messageformat'] = 'JSON';\nmsg.headers['omfversion'] = '1.0';\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "x": 910,
+        "y": 680,
+        "wires": [
+            [
+                "d882e191.29934"
+            ]
+        ]
+    },
+    {
+        "id": "700e7d76.b4b384",
+        "type": "function",
+        "z": "9b376a45.563e98",
+        "name": "Create OMF dynamic and static type JSON",
+        "func": "// Learn more about this kind of JSON here:\n// https://omf-docs.readthedocs.io/en/v1.0/Type_Messages.html\nmsg.payload = [\n        {\n            // Remember this type ID; it'll be used later\n            \"id\": msg.OMFdynamicTypeID,\n            \"type\": \"object\",\n            \"classification\": \"dynamic\",\n            \"properties\": {\n                \"Time\": {\n                    \"format\": \"date-time\",\n                    \"type\": \"string\",\n                    \"isindex\": true\n                },\n                \"Raw Sensor Reading 1\": {\n                    \"type\": \"number\"\n                },\n                \"Raw Sensor Reading 2\": {\n                    \"type\": \"number\"\n                }\n            }\n        },\n        {\n            // Remember this type ID; it'll be used later\n            \"id\": msg.OMFstaticTypeID,\n            \"type\": \"object\",\n            \"classification\": \"static\",\n            \"properties\": {\n                \"Name\": {\n                    \"type\": \"string\",\n                    \"isindex\": true\n                },\n                // These are optional static parameters\n                // that you can set later in the code\n                \"Device Type\": {\n                    \"type\": \"string\"\n                },\n                \"Location\": {\n                    \"type\": \"string\"\n                },\n                \"Data Ingress Method\": {\n                    \"type\": \"string\"\n                }\n            }\n        }\n    ];\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "x": 890,
+        "y": 260,
+        "wires": [
+            [
+                "1348deea.b6d121"
+            ]
+        ]
+    },
+    {
+        "id": "88f8989c.024b78",
+        "type": "function",
+        "z": "9b376a45.563e98",
+        "name": "Create OMF container JSON",
+        "func": "// Learn more about this kind of JSON here:\n// https://omf-docs.readthedocs.io/en/v1.0/Container_Messages.html\nmsg.payload = [\n    {\n        // Remember this container ID; it'll be used later\n        \"id\": msg.OMFcontainerID,\n        // Here we're using the dynamic type ID defined earlier\n        \"typeid\": msg.OMFdynamicTypeID\n    }\n];\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "x": 940,
+        "y": 420,
+        "wires": [
+            [
+                "b9e160c9.33b86"
+            ]
+        ]
+    },
+    {
+        "id": "6faa2444.4c6b3c",
+        "type": "function",
+        "z": "9b376a45.563e98",
+        "name": "Create OMF links and asset JSON",
+        "func": "// Learn more about this kind of JSON here:\n// https://omf-docs.readthedocs.io/en/v1.0/Link_Type.html\nmsg.payload = [\n    {\n        \"typeid\": msg.OMFstaticTypeID,\n        \"values\": [\n            {\n                \"Name\": msg.OMFstaticTypeInstanceName,\n                // Here is where you can specify the values for\n                // those optional static peroperties\n                \"Device Type\": \"Type74656\",\n                \"Location\": \"IoT Test Lab\",\n                \"Data Ingress Method\": \"OMF\"\n            }\n        ]\n    },\n    {\n        \"typeid\": \"__Link\",\n        \"values\": [\n            {\n                \"Source\": {\n                    \"typeid\": msg.OMFstaticTypeID,\n                    \"index\": \"_ROOT\"\n                },\n                \"Target\": {\n                    \"typeid\": msg.OMFstaticTypeID,\n                    \"index\": msg.OMFstaticTypeInstanceName\n                }\n            },\n            {\n                \"Source\": {\n                    \"typeid\": msg.OMFstaticTypeID,\n                    \"index\": msg.OMFstaticTypeInstanceName\n                },\n                \"Target\": {\n                    \"containerid\": msg.OMFcontainerID\n                }\n            }\n        ]\n    }\n];\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "x": 920,
+        "y": 580,
+        "wires": [
+            [
+                "620814c8.56e3bc"
+            ]
+        ]
+    },
+    {
+        "id": "22b648d0.38d6d8",
+        "type": "function",
+        "z": "9b376a45.563e98",
+        "name": "Create OMF data values JSON",
+        "func": "// Learn more about this kind of JSON here:\n// https://omf-docs.readthedocs.io/en/v1.0/Data_Messages.html\nmsg.payload = [\n    {\n        \"containerid\": msg.OMFcontainerID,\n        \"values\": [\n            {\n                \"Time\": msg.currentTimestamp,\n                \"Raw Sensor Reading 1\": msg.sensorReading1,\n                \"Raw Sensor Reading 2\": msg.sensorReading2\n            }\n        ]\n    }\n];\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "x": 930,
+        "y": 740,
+        "wires": [
+            [
+                "96d485fc.d8efe8"
+            ]
+        ]
+    },
+    {
+        "id": "3722d399.64851c",
+        "type": "change",
+        "z": "9b376a45.563e98",
+        "name": "Set OMF constants",
+        "rules": [
+            {
+                "t": "set",
+                "p": "OMFstaticTypeID",
+                "pt": "msg",
+                "to": "Static Type 1",
+                "tot": "str"
+            },
+            {
+                "t": "set",
+                "p": "OMFdynamicTypeID",
+                "pt": "msg",
+                "to": "Dynamic Type 1",
+                "tot": "str"
+            },
+            {
+                "t": "set",
+                "p": "OMFcontainerID",
+                "pt": "msg",
+                "to": "Data Values Container 1",
+                "tot": "str"
+            },
+            {
+                "t": "set",
+                "p": "OMFstaticTypeInstanceName",
+                "pt": "msg",
+                "to": "Node-RED Data",
+                "tot": "str"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 530,
+        "y": 200,
+        "wires": [
+            [
+                "b8bd6a9.37b5698"
+            ]
+        ]
+    },
+    {
+        "id": "38792da.5a781d2",
+        "type": "change",
+        "z": "9b376a45.563e98",
+        "name": "Add sensor values",
+        "rules": [
+            {
+                "t": "set",
+                "p": "sensorReading1",
+                "pt": "msg",
+                "to": "$random()*1000",
+                "tot": "jsonata"
+            },
+            {
+                "t": "set",
+                "p": "sensorReading2",
+                "pt": "msg",
+                "to": "$random()*1000",
+                "tot": "jsonata"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 690,
+        "y": 740,
+        "wires": [
+            [
+                "22b648d0.38d6d8"
+            ]
+        ]
+    },
+    {
+        "id": "d882e191.29934",
+        "type": "change",
+        "z": "9b376a45.563e98",
+        "name": "Add the current timestamp",
+        "rules": [
+            {
+                "t": "set",
+                "p": "currentTimestamp",
+                "pt": "msg",
+                "to": "$now()\t",
+                "tot": "jsonata"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 460,
+        "y": 740,
+        "wires": [
+            [
+                "38792da.5a781d2"
+            ]
+        ]
+    },
+    {
+        "id": "424c9f67.607c3",
+        "type": "inject",
+        "z": "9b376a45.563e98",
+        "name": "Begin",
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "x": 170,
+        "y": 60,
+        "wires": [
+            [
+                "afda824f.c1d73"
+            ]
+        ]
+    },
+    {
+        "id": "301fbaf1.525796",
+        "type": "delay",
+        "z": "9b376a45.563e98",
+        "name": "Wait for a few seconds, then loop",
+        "pauseType": "delay",
+        "timeout": "5",
+        "timeoutUnits": "seconds",
+        "rate": "1",
+        "nbRateUnits": "1",
+        "rateUnits": "second",
+        "randomFirst": "1",
+        "randomLast": "5",
+        "randomUnits": "seconds",
+        "drop": false,
+        "x": 900,
+        "y": 840,
+        "wires": [
+            [
+                "be98d17f.5798f"
+            ]
+        ]
+    },
+    {
+        "id": "a52f968c.727978",
+        "type": "comment",
+        "z": "9b376a45.563e98",
+        "name": "Comment",
+        "info": "These are obtained from the PI Data Collection Manager",
+        "x": 180,
+        "y": 160,
+        "wires": []
+    },
+    {
+        "id": "5e1be8af.17cf58",
+        "type": "comment",
+        "z": "9b376a45.563e98",
+        "name": "Comment",
+        "info": "These constants that you specify will be re-used in the JSON messages that are sent out later in the code",
+        "x": 500,
+        "y": 160,
+        "wires": []
+    },
+    {
+        "id": "1a2920f6.7c4e2f",
+        "type": "comment",
+        "z": "9b376a45.563e98",
+        "name": "Comment",
+        "info": "Each outgoing message needs specific HTTPS headers to be added to it; for more about these headers, see https://omf-docs.readthedocs.io/en/v1.0/Headers.html",
+        "x": 700,
+        "y": 160,
+        "wires": []
+    },
+    {
+        "id": "c698e074.8f771",
+        "type": "comment",
+        "z": "9b376a45.563e98",
+        "name": "Comment",
+        "info": "With each outgoing data message, add the current timestamp in the format that's required by the OMF specification",
+        "x": 400,
+        "y": 780,
+        "wires": []
+    },
+    {
+        "id": "2a5c3f58.e2a9e",
+        "type": "comment",
+        "z": "9b376a45.563e98",
+        "name": "Comment",
+        "info": "In this example, we're simply sending random values, but here is where you could very easily add in live sensor data from a connected sensor or other data source",
+        "x": 660,
+        "y": 780,
+        "wires": []
+    },
+    {
+        "id": "bca32f66.62372",
+        "type": "comment",
+        "z": "9b376a45.563e98",
+        "name": "Comment",
+        "info": "These debug nodes will write the response of each outgoing request; if you open each response, if the message succeeded, the \"statusCode\" property of the response should equal \"204\" (for more on status codes, see https://omf-docs.readthedocs.io/en/v1.0/Standard_Responses.html)",
+        "x": 1520,
+        "y": 220,
+        "wires": []
+    },
+    {
+        "id": "8a903797.eea1d8",
+        "type": "comment",
+        "z": "9b376a45.563e98",
+        "name": "Comment",
+        "info": "JSON messages are sent out as HTTPS posts; note, in this example, we've turned off HTTPS certificate validation, to allow writing to non-production endpoints with untrusted or self-signed certificates",
+        "x": 1200,
+        "y": 220,
+        "wires": []
+    },
+    {
+        "id": "c730c37c.6cd1b",
+        "type": "comment",
+        "z": "9b376a45.563e98",
+        "name": "Comment",
+        "info": "After a few seconds (you can edit the delay), the code will loop and send a new data message",
+        "x": 820,
+        "y": 880,
+        "wires": []
+    },
+    {
+        "id": "ee0a19a1.0f9b08",
+        "type": "comment",
+        "z": "9b376a45.563e98",
+        "name": "Comment",
+        "info": "Click the button next to \"begin\" to start this example",
+        "x": 180,
+        "y": 20,
+        "wires": []
+    },
+    {
+        "id": "ac9d710c.d0dda",
+        "type": "comment",
+        "z": "9b376a45.563e98",
+        "name": "Comment",
+        "info": "Currently, OMF messages are sent out as JSON messages; in these nodes, we create JSON strings that conform to the rules of the OMF specification (as outlined here: https://omf-docs.readthedocs.io/en/v1.0/)",
+        "x": 780,
+        "y": 300,
+        "wires": []
+    },
+    {
+        "id": "5b90caa7.01e8f4",
+        "type": "tls-config",
+        "z": "",
+        "name": "Custom TLS configuration - allows self-signed certificates",
+        "cert": "",
+        "key": "",
+        "ca": "",
+        "certname": "",
+        "keyname": "",
+        "caname": "",
+        "verifyservercert": false
+    }
+]
