@@ -120,6 +120,11 @@ namespace IngressServiceAPI.API
 
             Console.WriteLine(" Send " + msgType + " message," + " reponse code is " + response.StatusCode.GetHashCode());
 
+            if ((int)response.StatusCode >= 400)
+            {
+                string error = await response.Content.ReadAsStringAsync();
+                Console.WriteLine(error);
+            }
             response.EnsureSuccessStatusCode();
         }
 

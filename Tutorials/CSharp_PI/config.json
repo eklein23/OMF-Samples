@@ -1,6 +1,8 @@
 {
   "producertoken": "uid=1d6e7b3d-5206-4d1e-9d06-7fbd4e632720&crt=20180801202819000&sig=buqwDMuaQcVdvHx6R20uuMd+NODzOtdxhE0wRxJe+E8=",
   "endpoint": "http://ekleinxps.osisoft.int:8118/ingress/messages",
+  "2producertoken": "LzBzgY1zPnxQ55TX6O4WEcj2i1lfL47fDQM57ectmmDjShQvIsQCbMKbKh4i7be",
+  "2endpoint": "https://localhost:5000/edge/omf/tenants/default/namespaces/data",
   "interval": 1000,
   "verifyCert": false,
   "compressionGzip": true,
@@ -10,6 +12,8 @@
   "AccessTokenSecret": "jcKfc7eo5qEaJvvPfIBCairJ1FcfOf6iGSz1dGGn7VzBD",
   "Tracks": [
     "california fire",
-    "green fish"
+    "trump golf",
+    "giants baseball",
+    "plane crash"
   ]
 }

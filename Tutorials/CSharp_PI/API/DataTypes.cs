@@ -29,6 +29,92 @@ namespace IngressServiceAPI
     /// </summary>
     /// 
 
+    class ProviderType
+    {
+        public string Index { get; set; }
+        public string Name { get; set; }
+
+        public const string JsonSchema = @"{
+                ""id"": ""ProviderType"",
+                ""name"": ""provider type"",
+                ""classification"": ""static"",
+                ""type"": ""object"",
+                ""description"": ""provider type"",
+                ""properties"": {
+                    ""Index"": {
+                        ""type"": ""string"",
+                        ""isindex"": true,
+                        ""name"": ""not in use"",
+                        ""description"": ""not in use""
+                    },
+                    ""Name"": {
+                        ""type"": ""string"",
+                        ""isname"": true,
+                        ""name"": ""not in use"",
+                        ""description"": ""not in use""
+                    }
+                }
+        }";
+    }
+
+    class TrackType
+    {
+        public string Index { get; set; }
+        public string Name { get; set; }
+
+        public const string JsonSchema = @"{
+                ""id"": ""TrackType"",
+                ""name"": ""track type"",
+                ""classification"": ""static"",
+                ""type"": ""object"",
+                ""description"": ""track type"",
+                ""properties"": {
+                    ""Index"": {
+                        ""type"": ""string"",
+                        ""isindex"": true,
+                        ""name"": ""not in use"",
+                        ""description"": ""not in use""
+                    },
+                    ""Name"": {
+                        ""type"": ""string"",
+                        ""isname"": true,
+                        ""name"": ""not in use"",
+                        ""description"": ""not in use""
+                    }
+                }
+        }";
+
+    }
+
+    class StatType
+    {
+        public DateTime TimeStamp { get; set; }
+        public int ItemCount { get; set; }
+
+        public const string JsonSchema =
+            @"{
+               ""id"": ""StatType"",
+                ""name"": ""statistic type"",
+                ""classification"": ""dynamic"",
+                ""type"": ""object"",
+                ""description"": ""not in use"",
+                ""properties"": {
+                    ""TimeStamp"": {
+                        ""format"": ""date-time"",
+                        ""type"": ""string"",
+                        ""isindex"": true,
+                        ""name"": ""not in use"",
+                        ""description"": ""not in use""
+                    },
+                    ""ItemCount"": {
+                        ""type"": ""integer"",
+                        ""name"": ""Item count"",
+                        ""description"": ""PI point data referenced integer attribute""
+                    }
+                }
+            }";
+    }
+
     class FirstStaticType
     {
         public string index { get; set; }
