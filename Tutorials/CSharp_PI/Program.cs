@@ -26,11 +26,27 @@ using System;
 using System.IO;
 using System.Collections.Generic;
 using System.Threading;
+using Tweetinvi;
+using Tweetinvi.Streaming;
+using Tweetinvi.Models;
+using System.Text.RegularExpressions;
+using SimpleNetNlp;
 
 namespace IngressServiceAPI
 {
     class Program
     {
+        static string consumerKey;
+        static string consumerSecret;
+        static string accessToken;
+        static string accessTokenSecret;
+        static IFilteredStream _stream;
+
+        private static string Sanitize(string raw)
+        {
+            return Regex.Replace(raw, @"(@[A-Za-z0-9]+)|([^0-9A-Za-z \t])|(\w+:\/\/\S+)", " ").ToString();
+        }
+
         static void Main(string[] args)
         {
             // get and parse json configuration file
@@ -39,6 +55,30 @@ namespace IngressServiceAPI
             string ingressServiceUrl = jsonValues.endpoint; 
             string producerToken     = jsonValues.producertoken;
             int    delayInterval     = jsonValues.interval;
+
+            consumerKey = jsonValues.ConsumerKey;
+            consumerSecret = jsonValues.ConsumerSecret;
+            accessToken = jsonValues.AccessToken;
+            accessTokenSecret = jsonValues.AccessTokenSecret;
+
+            Auth.SetUserCredentials(consumerKey, consumerSecret, accessToken, accessTokenSecret);
+
+            _stream = Tweetinvi.Stream.CreateFilteredStream();
+            _stream.AddTweetLanguageFilter(LanguageFilter.English);
+            _stream.AddTrack("california fire");
+            //_stream.AddTrack("green fish");
+
+            _stream.MatchingTweetReceived += (sender, tweetArgs) =>
+            {
+                var sanitized = Sanitize(tweetArgs.Tweet.FullText);
+                //var sentence = new Sentence(sanitized);
+
+                //Console.WriteLine(tweetArgs.Tweet.CreatedBy.Name);
+                Console.WriteLine(tweetArgs.Tweet.Text);
+                Console.WriteLine(String.Join(";", tweetArgs.MatchingTracks));
+                //Console.WriteLine(sentence.Sentiment);
+            };
+            _stream.StartStreamMatchingAnyCondition();
 
             // create Http client to send requests to ingress service
             IngressClient client = new IngressClient(ingressServiceUrl, producerToken);
@@ -109,6 +149,7 @@ namespace IngressServiceAPI
                 continueRunning = false;
                 Console.Write("Stopping... ");
                 eventArgs.Cancel = true;
+                _stream.StopStream();
             };
 
             // simulate realtime data
@@ -130,7 +171,7 @@ namespace IngressServiceAPI
                 DataValues vals1 = new DataValues() { ContainerId = streams[0].Id, Values = values };
                 DataValues vals2 = new DataValues() { ContainerId = streams[1].Id, Values = values };
                 // Now send them
-                client.SendValuesAsync(new DataValues[] { vals1, vals2 }).Wait();
+                //client.SendValuesAsync(new DataValues[] { vals1, vals2 }).Wait();
            
                 // Create set of SecondDynamicType values to send to streams
                 List<SecondDynamicType> fnumbers = new List<SecondDynamicType>();
@@ -141,7 +182,7 @@ namespace IngressServiceAPI
                     Thread.Sleep(10);  // Offset the time-stamps by 10 ms
                 }
                 DataValues nums = new DataValues() { ContainerId = streams[2].Id, Values = fnumbers };
-                client.SendValuesAsync(new DataValues[] { nums }).Wait();
+                //client.SendValuesAsync(new DataValues[] { nums }).Wait();
 
 
                 // Create set of ThirdDynamicType values to send to streams
@@ -153,7 +194,7 @@ namespace IngressServiceAPI
                     Thread.Sleep(10);  // Offset the time-stamps by 10 ms
                 }
                 DataValues bvals = new DataValues() { ContainerId = streams[3].Id, Values = enumvalues };
-                client.SendValuesAsync(new DataValues[] { bvals }).Wait();
+                //client.SendValuesAsync(new DataValues[] { bvals }).Wait();
 
                 Thread.Sleep(delayInterval);
             }

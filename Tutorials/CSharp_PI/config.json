@@ -1,7 +1,11 @@
 {
-  "producertoken": "uid=c2d8af09-e457-47ed-ae41-d07d8fddf189&crt=20180510202247387&sig=uu4NUE3ucoRUg/yK+eb0aJ61vdQ0sW4YzC4suQhA85o=",
-  "endpoint": "http://localhost:8118/ingress/messages",
+  "producertoken": "uid=1d6e7b3d-5206-4d1e-9d06-7fbd4e632720&crt=20180801202819000&sig=buqwDMuaQcVdvHx6R20uuMd+NODzOtdxhE0wRxJe+E8=",
+  "endpoint": "http://ekleinxps.osisoft.int:8118/ingress/messages",
   "interval": 1000,
   "verifyCert": false,
-  "compressionGzip": true
+  "compressionGzip": true,
+  "ConsumerKey": "fh3icY0oqAc8FJJhw9Ai4aiNR",
+  "ConsumerSecret": "gi2F2SNcRsvfllqdC7D9ysexq5EeFZpXkKUxNASsjpldnlDIDD",
+  "AccessToken": "22094796-mHj4MMbkKKcZINHGTvvfzRTJ8GCE4AUJbbl2O6ThK",
+  "AccessTokenSecret": "jcKfc7eo5qEaJvvPfIBCairJ1FcfOf6iGSz1dGGn7VzBD"
 }
