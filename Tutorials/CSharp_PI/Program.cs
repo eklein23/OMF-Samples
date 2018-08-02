@@ -26,14 +26,21 @@ using System;
 using System.IO;
 using System.Collections.Generic;
 using System.Threading;
+using System.Linq;
 using Tweetinvi;
 using Tweetinvi.Streaming;
 using Tweetinvi.Models;
 using System.Text.RegularExpressions;
-using SimpleNetNlp;
+//using SimpleNetNlp;
 
 namespace IngressServiceAPI
 {
+    class TrackStat
+    {
+        public string TrackValue;
+        public int TweetCount;
+    }
+
     class Program
     {
         static string consumerKey;
@@ -41,6 +48,8 @@ namespace IngressServiceAPI
         static string accessToken;
         static string accessTokenSecret;
         static IFilteredStream _stream;
+        static DateTime _periodStart;
+        static List<TrackStat> _stats = new List<TrackStat>();
 
         private static string Sanitize(string raw)
         {
@@ -54,7 +63,7 @@ namespace IngressServiceAPI
             dynamic jsonValues       = JObject.Parse(jsonConfig);
             string ingressServiceUrl = jsonValues.endpoint; 
             string producerToken     = jsonValues.producertoken;
-            int    delayInterval     = jsonValues.interval;
+            int delayInterval     = jsonValues.interval;
 
             consumerKey = jsonValues.ConsumerKey;
             consumerSecret = jsonValues.ConsumerSecret;
@@ -68,16 +77,29 @@ namespace IngressServiceAPI
             _stream.AddTrack("california fire");
             //_stream.AddTrack("green fish");
 
+            
             _stream.MatchingTweetReceived += (sender, tweetArgs) =>
             {
+                CheckTime();
+
                 var sanitized = Sanitize(tweetArgs.Tweet.FullText);
                 //var sentence = new Sentence(sanitized);
 
                 //Console.WriteLine(tweetArgs.Tweet.CreatedBy.Name);
                 Console.WriteLine(tweetArgs.Tweet.Text);
                 Console.WriteLine(String.Join(";", tweetArgs.MatchingTracks));
+
+                TrackStat stat;
+                foreach (string track in tweetArgs.MatchingTracks)
+                {
+                    stat = _stats.Where(x => x.TrackValue == track).FirstOrDefault();
+                    if (stat != null)
+                        ++stat.TweetCount;
+                }
+
                 //Console.WriteLine(sentence.Sentiment);
             };
+
             _stream.StartStreamMatchingAnyCondition();
 
             // create Http client to send requests to ingress service
@@ -198,6 +220,11 @@ namespace IngressServiceAPI
 
                 Thread.Sleep(delayInterval);
             }
+        }
+
+        static void CheckTime()
+        {
+
         }
     }
 }
